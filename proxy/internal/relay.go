@@ -17,6 +17,8 @@ type Relay struct {
 	mu           sync.RWMutex
 	clients      map[*client]struct{}
 	upstreamDown bool
+	streamOffset uint64
+	buffer       *ringBuffer
 	writeMu      sync.Mutex
 }
 
@@ -40,6 +42,7 @@ func NewRelay(upstream net.Conn) (*Relay, error) {
 		sessionID: sid,
 		upstream:  upstream,
 		clients:   map[*client]struct{}{},
+		buffer:    newRingBuffer(1 << 20),
 	}, nil
 }
 
@@ -52,7 +55,14 @@ func (r *Relay) RunUpstreamPump() {
 	for {
 		n, err := r.upstream.Read(buf)
 		if n > 0 {
-			r.broadcast(outbound{opcode: opBinary, data: append([]byte("DATA "), buf[:n]...)})
+			chunk := append([]byte(nil), buf[:n]...)
+
+			r.mu.Lock()
+			r.streamOffset += uint64(len(chunk))
+			r.buffer.Append(chunk)
+			r.mu.Unlock()
+
+			r.broadcast(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
 		}
 		if err != nil {
 			r.markUpstreamDown()
@@ -72,6 +82,9 @@ func (r *Relay) HandleWS(conn *wsConn) {
 
 	go c.conn.writeLoop(c.send)
 	c.send <- outbound{opcode: opText, data: []byte("WELCOME " + r.sessionID)}
+	if recent := r.latestBuffer(); len(recent) > 0 {
+		c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), recent...)}
+	}
 
 	for {
 		opcode, payload, err := conn.readFrame()
@@ -116,10 +129,16 @@ func (r *Relay) handleLine(c *client, line string) error {
 	case strings.HasPrefix(line, "SEND "):
 		return r.sendUpstream([]byte(strings.TrimPrefix(line, "SEND ") + "\n"))
 	case strings.HasPrefix(line, "RESUME "):
-		return errors.New("resume not available in phase 1")
+		return errors.New("resume not available in phase 2")
 	default:
 		return nil
 	}
+}
+
+func (r *Relay) latestBuffer() []byte {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.buffer.Snapshot()
 }
 
 func (r *Relay) sendUpstream(data []byte) error {

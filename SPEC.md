@@ -5,7 +5,8 @@ Phase tracking for the relay/client system.
 ## Current status
 
 - Phase 1 (Basic Relay): implemented
-- Phase 2+: not started
+- Phase 2 (Rolling Buffer): implemented
+- Phase 3+: not started
 
 ## Locked protocol
 
