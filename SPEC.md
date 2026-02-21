@@ -8,7 +8,7 @@ Phase tracking for the relay/client system.
 - Phase 2 (Rolling Buffer): implemented
 - Phase 3 (Resume Support): implemented
 - Phase 4 (Core Engine): implemented
-- Phase 5+: not started
+- Phase 5 (macOS UI): implemented
 
 ## Locked protocol
 
