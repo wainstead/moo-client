@@ -53,6 +53,15 @@ cd /Users/swain/Projects/moo-client
 Default bind: `127.0.0.1:9000`  
 Upstream MOO: `127.0.0.1:7777`
 
+For iPhone-on-LAN development, use:
+
+```bash
+cd /Users/swain/Projects/moo-client
+PROXY_MODE=lan ./scripts/run_proxy.sh
+```
+
+This binds `0.0.0.0:9000` (trusted local network only).
+
 ### Connect simple test client
 
 ```bash
@@ -100,4 +109,3 @@ Proxy is intended to bind localhost only and be reached by SSH tunnel:
 ```bash
 ssh -L 9000:localhost:9000 panix
 ```
-

@@ -103,6 +103,12 @@ Run proxy:
 ./scripts/run_proxy.sh
 ```
 
+Run proxy in LAN dev mode (for phone -> laptop testing):
+
+```bash
+PROXY_MODE=lan ./scripts/run_proxy.sh
+```
+
 Run smoke test:
 
 ```bash
@@ -114,4 +120,3 @@ Run smoke test:
 - `bootstrap_moo.sh` assumes common LambdaCore command verbs.
   If you swap DB/core, adjust that script accordingly.
 - Keep proxy and MOO separate in local/dev/deploy topology.
-

@@ -9,6 +9,7 @@ Phase tracking for the relay/client system.
 - Phase 3 (Resume Support): implemented
 - Phase 4 (Core Engine): implemented
 - Phase 5 (macOS UI): implemented
+- Phase 6 (LAN dev mode for proxy): implemented
 
 ## Next milestone
 
@@ -29,7 +30,6 @@ Deployment model remains unchanged:
 
 ## Planned phases
 
-- Phase 6: LAN dev mode for proxy (`0.0.0.0` listen option) + tests
 - Phase 7: iOS relay client with `HELLO`, `SEND`, `PING`, `RESUME`
 - Phase 8: iOS minimal UI (occupants, messages, input)
 - Phase 9: iPhone sleep/resume validation checklist and fixes

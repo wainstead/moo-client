@@ -10,9 +10,15 @@ import (
 )
 
 func main() {
-	listenAddr := flag.String("listen", "127.0.0.1:9000", "websocket listen address")
+	mode := flag.String("mode", "local", "proxy listen mode: local or lan")
+	listenAddr := flag.String("listen", "", "websocket listen address override")
 	upstreamAddr := flag.String("upstream", "127.0.0.1:7777", "upstream MOO TCP address")
 	flag.Parse()
+
+	resolvedListenAddr, err := resolveListenAddr(*mode, *listenAddr)
+	if err != nil {
+		log.Fatalf("resolve listen address: %v", err)
+	}
 
 	upstream, err := net.Dial("tcp", *upstreamAddr)
 	if err != nil {
@@ -36,8 +42,8 @@ func main() {
 	})
 
 	go relay.RunUpstreamPump()
-	log.Printf("mooproxy listening on %s with session %s", *listenAddr, relay.SessionID())
-	if err := http.ListenAndServe(*listenAddr, mux); err != nil {
+	log.Printf("mooproxy listening on %s (mode=%s) with session %s", resolvedListenAddr, *mode, relay.SessionID())
+	if err := http.ListenAndServe(resolvedListenAddr, mux); err != nil {
 		log.Fatalf("serve: %v", err)
 	}
 }
