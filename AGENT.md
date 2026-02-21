@@ -36,6 +36,10 @@ Do not blur these responsibilities.
 
 ## Required validation before commit
 
+Preferred top-level validation from repo root:
+
+- `make check`
+
 At minimum, run what is relevant to changed components:
 
 - Proxy: `cd proxy && go test ./... && go build ./...`

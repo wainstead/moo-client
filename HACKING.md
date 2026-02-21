@@ -110,11 +110,17 @@ Key files:
 
 ## Typical workflows
 
+Show available top-level tasks:
+
+```bash
+make help
+```
+
 Start local MOO:
 
 ```bash
-./scripts/run_local_moo.sh up
-./scripts/run_local_moo.sh bootstrap
+make moo-up
+make moo-bootstrap
 ```
 
 Run proxy:
@@ -132,10 +138,16 @@ PROXY_MODE=lan ./scripts/run_proxy.sh
 Run smoke test:
 
 ```bash
-./scripts/test_e2e.sh
+make e2e
 ```
 
-Run iOS relay self-test:
+Run full repo test suite:
+
+```bash
+make test
+```
+
+Run only iOS relay self-test:
 
 ```bash
 cd ios-app

@@ -30,7 +30,16 @@ This document covers:
 
 ## 1. Automated verification
 
-From repo root:
+Preferred (from repo root):
+
+```bash
+make test   # language-level checks
+make e2e    # end-to-end smoke test against local MOO
+# or:
+make check  # test + e2e
+```
+
+Equivalent manual commands:
 
 ```bash
 cd proxy

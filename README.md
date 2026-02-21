@@ -15,6 +15,7 @@ Architecture model: single upstream MOO connection, multiple concurrent WebSocke
 
 See `SPEC.md` for protocol and scope rules.
 Testing instructions live in `TESTING.md`.
+Top-level convenience commands are available via `Makefile` (run `make help`).
 
 ## Repository layout
 
@@ -91,6 +92,17 @@ cd moo-client
 This checks relay handshake, MOO login through proxy, command flow, and `PING`/`PONG`.
 
 ## Build and test
+
+Preferred (repo root):
+
+```bash
+make test
+make e2e
+# or:
+make check
+```
+
+Equivalent per-component commands:
 
 ```bash
 cd proxy
