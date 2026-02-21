@@ -1,0 +1,117 @@
+# HACKING
+
+Developer notes for working on `moo-client`.
+
+## Philosophy
+
+This is a systems behavior project, not a UI polish project.
+
+Priority order:
+1. Reconnect correctness
+2. Protocol correctness
+3. Simplicity
+4. Performance
+
+## Hard constraints
+
+- Do not change protocol unless explicitly requested.
+- Do not add features outside the active phase/scope.
+- No auth implementation.
+- No credential storage outside explicit local test config (`.env.moo`).
+- Proxy never generates commands on its own.
+- UI must not parse raw network text directly; raw text classification belongs in `core/`.
+
+## Protocol (locked)
+
+Client -> Proxy
+- `HELLO <session-id>`
+- `RESUME <offset>`
+- `SEND <text>\n`
+- `PING`
+
+Proxy -> Client
+- `WELCOME <session-id>`
+- `DATA <raw-bytes>`
+- `PONG`
+
+Offsets are against raw upstream byte stream.
+
+## Main components
+
+### `proxy/` (Go)
+
+- Maintains one upstream TCP connection to MOO.
+- Accepts WebSocket clients.
+- Broadcasts upstream bytes as `DATA`.
+- Maintains stream offset and 1 MB rolling buffer.
+- Supports `RESUME <offset>` replay from available window.
+
+Key files:
+- `proxy/cmd/mooproxy/main.go`
+- `proxy/internal/relay.go`
+- `proxy/internal/ring_buffer.go`
+- `proxy/internal/ws.go`
+
+### `core/` (Rust)
+
+- Classifies incoming text lines using regex.
+- Emits JSON events with offset.
+- Event kinds: `chat`, `arrive`, `leave`, `system`.
+
+Key files:
+- `core/src/lib.rs`
+- `core/src/main.rs`
+- `core/tests/classify.rs`
+
+### `macos-app/` (Swift)
+
+- Minimal chat UI with occupant list, messages, input.
+- Relay client receives proxy `DATA` and passes lines into `core` bridge.
+- UI consumes structured events only.
+
+Key files:
+- `macos-app/Sources/MooMacApp/RelayClient.swift`
+- `macos-app/Sources/MooMacApp/CoreClassifierBridge.swift`
+- `macos-app/Sources/MooMacApp/AppViewModel.swift`
+
+## Local infra
+
+### LambdaMOO container
+
+- Compose file: `docker-compose.moo.yml`
+- Runner: `scripts/run_local_moo.sh`
+- Bootstrap: `scripts/moo/bootstrap_moo.sh`
+- Credentials/room names: `.env.moo` (copy from `.env.moo.example`)
+
+### Smoke test
+
+- `scripts/test_e2e.sh`
+- Validates end-to-end relay + login flow.
+
+## Typical workflows
+
+Start local MOO:
+
+```bash
+./scripts/run_local_moo.sh up
+./scripts/run_local_moo.sh bootstrap
+```
+
+Run proxy:
+
+```bash
+./scripts/run_proxy.sh
+```
+
+Run smoke test:
+
+```bash
+./scripts/test_e2e.sh
+```
+
+## Known caveats
+
+- `bootstrap_moo.sh` assumes common LambdaCore command verbs.
+  If you swap DB/core, adjust that script accordingly.
+- Keep proxy and MOO separate in local/dev/deploy topology.
+
