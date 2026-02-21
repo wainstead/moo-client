@@ -63,6 +63,8 @@ Top-level convenience commands are available via `Makefile` (run `make help`).
       +------------------------------+      +------------------------------+
 
 Notes:
+- The classifier maps raw MOO text lines into structured event types (`Chat`, `Arrive`, `Leave`, `System`) with byte offsets.
+- Structured events are what the UI renders and uses for occupant/message state updates.
 - UI layers consume structured events; they do not parse raw network text directly.
 - Proxy is the shared transport/session authority for all connected clients.
 ```
