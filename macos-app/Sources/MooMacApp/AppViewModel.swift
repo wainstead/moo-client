@@ -27,6 +27,12 @@ final class AppViewModel: ObservableObject {
                 self?.apply(event)
             }
         }
+        client.onDisconnected = { [weak self] in
+            Task { @MainActor in
+                self?.systems.append(SystemMessage(text: "relay disconnected", offset: client.upstreamOffset))
+                self?.relay = nil
+            }
+        }
 
         relay = client
         systems.append(SystemMessage(text: "connecting to \(wsURL.absoluteString)", offset: 0))

@@ -1,5 +1,16 @@
 import Foundation
 
+enum CoreBridgeError: LocalizedError {
+    case binaryNotFound
+
+    var errorDescription: String? {
+        switch self {
+        case .binaryNotFound:
+            return "moo-core binary not found. Set MOO_CORE_BIN or place moo-core in the app bundle."
+        }
+    }
+}
+
 final class CoreClassifierBridge {
     private let process = Process()
     private let inputPipe = Pipe()
@@ -15,8 +26,11 @@ final class CoreClassifierBridge {
         process.standardOutput = outputPipe
         process.standardError = Pipe()
 
-        let env = ProcessInfo.processInfo.environment
-        let coreBin = env["MOO_CORE_BIN"] ?? "/Users/swain/Projects/moo-client/core/target/debug/moo-core"
+        process.terminationHandler = { [weak self] proc in
+            self?.onError?("core classifier exited with status \(proc.terminationStatus)")
+        }
+
+        let coreBin = try resolveCoreBinaryPath()
 
         process.executableURL = URL(fileURLWithPath: coreBin)
         try process.run()
@@ -66,5 +80,17 @@ final class CoreClassifierBridge {
                 onError?("core event decode failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func resolveCoreBinaryPath() throws -> String {
+        let env = ProcessInfo.processInfo.environment
+        if let fromEnv = env["MOO_CORE_BIN"], FileManager.default.isExecutableFile(atPath: fromEnv) {
+            return fromEnv
+        }
+        if let bundled = Bundle.main.path(forResource: "moo-core", ofType: nil),
+           FileManager.default.isExecutableFile(atPath: bundled) {
+            return bundled
+        }
+        throw CoreBridgeError.binaryNotFound
     }
 }

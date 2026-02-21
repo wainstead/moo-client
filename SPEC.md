@@ -2,6 +2,8 @@
 
 Phase tracking for the relay/client system.
 
+Protocol summary: line-oriented control over WebSocket text frames; `DATA` binary frames carry raw upstream bytes; `RESUME` replays by byte offset.
+
 ## Current status
 
 - Phase 1 (Basic Relay): implemented
@@ -35,6 +37,10 @@ Deployment model remains unchanged:
 - Phase 9: iPhone sleep/resume validation checklist and fixes
 
 ## Locked protocol
+
+Proxy model: single upstream TCP session to MOO, multiple WebSocket clients attached to that session.
+
+Offset semantics: offset is the 0-based index of the next upstream byte expected by the client (one past the last applied byte).
 
 Client -> Proxy:
 - HELLO <session-id>

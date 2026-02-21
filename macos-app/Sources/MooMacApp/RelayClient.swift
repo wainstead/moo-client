@@ -12,6 +12,7 @@ final class RelayClient {
 
     var onEvent: ((CoreEvent) -> Void)?
     var onSystem: ((String) -> Void)?
+    var onDisconnected: (() -> Void)?
 
     init(wsURL: URL, sessionID: String = UUID().uuidString) {
         self.wsURL = wsURL
@@ -72,6 +73,7 @@ final class RelayClient {
             case .failure(let error):
                 self.onSystem?("connection closed: \(error.localizedDescription)")
                 self.classifier.stop()
+                self.onDisconnected?()
             }
         }
     }

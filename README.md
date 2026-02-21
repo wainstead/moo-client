@@ -3,6 +3,7 @@
 `moo-client` is a persistent relay + client stack for LambdaMOO.
 
 Goal: keep one continuous upstream TCP session to MOO while clients can attach/detach over WebSocket, so a sleeping device can resume without a visible MOO reconnect.
+Architecture model: single upstream MOO connection, multiple concurrent WebSocket clients.
 
 ## Current status
 

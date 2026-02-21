@@ -48,3 +48,28 @@ fn classifies_system() {
         }
     );
 }
+
+#[test]
+fn classifies_chat_with_colon_in_message() {
+    let got = classify_line("Frog: hello:world", 8);
+    assert_eq!(
+        got,
+        Event::Chat {
+            speaker: "Frog".to_string(),
+            message: "hello:world".to_string(),
+            offset: 8
+        }
+    );
+}
+
+#[test]
+fn unknown_line_is_system() {
+    let got = classify_line("*** server maintenance ***", 77);
+    assert_eq!(
+        got,
+        Event::System {
+            text: "*** server maintenance ***".to_string(),
+            offset: 77
+        }
+    );
+}

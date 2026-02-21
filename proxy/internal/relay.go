@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -204,6 +205,7 @@ func (r *Relay) broadcast(msg outbound) {
 		select {
 		case c.send <- msg:
 		default:
+			log.Printf("dropping websocket client: send buffer full")
 			go r.removeClient(c)
 		}
 	}

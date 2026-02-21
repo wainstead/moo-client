@@ -26,6 +26,7 @@ fn main() {
 }
 
 fn parse_input_line(line: &str) -> (u64, &str) {
+    // Optional wire format for callers: "<offset>\t<raw line>".
     if let Some((offset, text)) = line.split_once('\t') {
         if let Ok(v) = offset.parse::<u64>() {
             return (v, text);

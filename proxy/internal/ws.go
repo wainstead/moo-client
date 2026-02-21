@@ -15,6 +15,8 @@ import (
 )
 
 const defaultWriteWait = 5 * time.Second
+const defaultReadWait = 2 * time.Minute
+const maxIncomingFramePayload = 1 << 20
 
 const (
 	opText   = 0x1
@@ -92,6 +94,8 @@ func (c *wsConn) writeLoop(ch <-chan outbound) {
 }
 
 func (c *wsConn) readFrame() (byte, []byte, error) {
+	_ = c.conn.SetReadDeadline(time.Now().Add(defaultReadWait))
+
 	h := make([]byte, 2)
 	if _, err := io.ReadFull(c.r, h); err != nil {
 		return 0, nil, err
@@ -114,6 +118,10 @@ func (c *wsConn) readFrame() (byte, []byte, error) {
 			return 0, nil, err
 		}
 		ln = binary.BigEndian.Uint64(v)
+	}
+
+	if ln > maxIncomingFramePayload {
+		return 0, nil, errors.New("frame too large")
 	}
 
 	if !masked {

@@ -1,5 +1,10 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+static CHAT_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^([^:]+):\s+(.*)$").expect("chat regex"));
+static ARRIVE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(.+) has arrived\.$").expect("arrive regex"));
+static LEAVE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(.+) has left\.$").expect("leave regex"));
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -11,11 +16,7 @@ pub enum Event {
 }
 
 pub fn classify_line(line: &str, offset: u64) -> Event {
-    let chat = Regex::new(r"^([^:]+):\s+(.*)$").expect("chat regex");
-    let arrive = Regex::new(r"^(.+) has arrived\.$").expect("arrive regex");
-    let leave = Regex::new(r"^(.+) has left\.$").expect("leave regex");
-
-    if let Some(caps) = chat.captures(line) {
+    if let Some(caps) = CHAT_RE.captures(line) {
         return Event::Chat {
             speaker: caps[1].trim().to_string(),
             message: caps[2].to_string(),
@@ -23,14 +24,14 @@ pub fn classify_line(line: &str, offset: u64) -> Event {
         };
     }
 
-    if let Some(caps) = arrive.captures(line) {
+    if let Some(caps) = ARRIVE_RE.captures(line) {
         return Event::Arrive {
             who: caps[1].trim().to_string(),
             offset,
         };
     }
 
-    if let Some(caps) = leave.captures(line) {
+    if let Some(caps) = LEAVE_RE.captures(line) {
         return Event::Leave {
             who: caps[1].trim().to_string(),
             offset,
