@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -23,8 +24,9 @@ type Relay struct {
 }
 
 type client struct {
-	conn *wsConn
-	send chan outbound
+	conn       *wsConn
+	send       chan outbound
+	replaySent bool
 }
 
 type outbound struct {
@@ -82,9 +84,6 @@ func (r *Relay) HandleWS(conn *wsConn) {
 
 	go c.conn.writeLoop(c.send)
 	c.send <- outbound{opcode: opText, data: []byte("WELCOME " + r.sessionID)}
-	if recent := r.latestBuffer(); len(recent) > 0 {
-		c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), recent...)}
-	}
 
 	for {
 		opcode, payload, err := conn.readFrame()
@@ -122,6 +121,12 @@ func (r *Relay) handleLine(c *client, line string) error {
 
 	switch {
 	case strings.HasPrefix(line, "HELLO "):
+		if !c.replaySent {
+			if recent := r.latestBuffer(); len(recent) > 0 {
+				c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), recent...)}
+			}
+			c.replaySent = true
+		}
 		return nil
 	case line == "PING":
 		c.send <- outbound{opcode: opText, data: []byte("PONG")}
@@ -129,7 +134,16 @@ func (r *Relay) handleLine(c *client, line string) error {
 	case strings.HasPrefix(line, "SEND "):
 		return r.sendUpstream([]byte(strings.TrimPrefix(line, "SEND ") + "\n"))
 	case strings.HasPrefix(line, "RESUME "):
-		return errors.New("resume not available in phase 2")
+		offsetStr := strings.TrimSpace(strings.TrimPrefix(line, "RESUME "))
+		offset, err := strconv.ParseUint(offsetStr, 10, 64)
+		if err != nil {
+			return errors.New("invalid resume offset")
+		}
+		if missing := r.bufferFromOffset(offset); len(missing) > 0 {
+			c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)}
+		}
+		c.replaySent = true
+		return nil
 	default:
 		return nil
 	}
@@ -139,6 +153,28 @@ func (r *Relay) latestBuffer() []byte {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.buffer.Snapshot()
+}
+
+func (r *Relay) bufferFromOffset(offset uint64) []byte {
+	r.mu.RLock()
+	snapshot := r.buffer.Snapshot()
+	streamOffset := r.streamOffset
+	r.mu.RUnlock()
+
+	if len(snapshot) == 0 {
+		return nil
+	}
+	if offset >= streamOffset {
+		return nil
+	}
+
+	oldestOffset := streamOffset - uint64(len(snapshot))
+	if offset <= oldestOffset {
+		return snapshot
+	}
+
+	start := int(offset - oldestOffset)
+	return snapshot[start:]
 }
 
 func (r *Relay) sendUpstream(data []byte) error {
