@@ -72,6 +72,7 @@ cp .env.moo.example .env.moo   # optional: copy default local MOO credentials/se
 If you had previous dev runs, clear stale proxies before testing:
 
 ```bash
+make down-everything   # recommended: stop local MOO stack + all mooproxy processes
 make proxy-status      # show running mooproxy listeners/processes
 make proxy-down-all    # stop all local mooproxy processes
 ```

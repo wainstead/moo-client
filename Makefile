@@ -3,7 +3,7 @@ SHELL := /bin/bash
 .PHONY: help build test e2e check clean \
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
-	proxy-status proxy-down proxy-down-all
+	proxy-status proxy-down proxy-down-all down-everything
 
 help:
 	@echo "Available targets:"
@@ -20,6 +20,7 @@ help:
 	@echo "  make proxy-status  # Show running mooproxy listeners"
 	@echo "  make proxy-down    # Stop any process listening on TCP 9000"
 	@echo "  make proxy-down-all # Stop all local mooproxy processes"
+	@echo "  make down-everything # Stop local MOO stack and all mooproxy processes"
 
 build:
 	cd proxy && go build ./...
@@ -88,3 +89,7 @@ proxy-down-all:
 	else \
 	  echo "no mooproxy processes found"; \
 	fi
+
+down-everything:
+	@$(MAKE) moo-down
+	@$(MAKE) proxy-down-all

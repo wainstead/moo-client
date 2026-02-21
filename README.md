@@ -96,6 +96,7 @@ This checks relay handshake, MOO login through proxy, command flow, and `PING`/`
 If you suspect an old proxy process is still running:
 
 ```bash
+make down-everything  # recommended: stop MOO stack + all mooproxy processes
 make proxy-status
 make proxy-down       # stops listeners on TCP 9000
 make proxy-down-all   # stops all mooproxy processes
