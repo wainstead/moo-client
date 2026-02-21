@@ -5,9 +5,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"moo-client/proxy/internal"
 )
+
+const upstreamDialTimeout = 10 * time.Second
 
 func main() {
 	mode := flag.String("mode", "local", "proxy listen mode: local or lan")
@@ -20,7 +23,7 @@ func main() {
 		log.Fatalf("resolve listen address: %v", err)
 	}
 
-	upstream, err := net.Dial("tcp", *upstreamAddr)
+	upstream, err := net.DialTimeout("tcp", *upstreamAddr, upstreamDialTimeout)
 	if err != nil {
 		log.Fatalf("connect upstream: %v", err)
 	}

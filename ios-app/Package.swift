@@ -21,5 +21,10 @@ let package = Package(
             dependencies: ["MooIOSRelay"],
             path: "Sources/MooIOSRelaySelfTest"
         ),
+        .testTarget(
+            name: "MooIOSRelayTests",
+            dependencies: ["MooIOSRelay"],
+            path: "Tests/MooIOSRelayTests"
+        ),
     ]
 )

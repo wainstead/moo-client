@@ -35,3 +35,23 @@ func TestBufferFromOffsetAtTip(t *testing.T) {
 		t.Fatalf("bufferFromOffset len = %d, want 0", len(got))
 	}
 }
+
+func TestBufferFromOffsetEmptyBuffer(t *testing.T) {
+	r := &Relay{buffer: newRingBuffer(8)}
+	// buffer never appended to; streamOffset can be 0 or any value
+	r.streamOffset = 0
+	got := r.bufferFromOffset(0)
+	if len(got) != 0 {
+		t.Fatalf("bufferFromOffset with empty buffer len = %d, want 0", len(got))
+	}
+}
+
+func TestBufferFromOffsetBeyondTip(t *testing.T) {
+	r := &Relay{buffer: newRingBuffer(8)}
+	r.buffer.Append([]byte("abcdef"))
+	r.streamOffset = 6
+	got := r.bufferFromOffset(7)
+	if len(got) != 0 {
+		t.Fatalf("bufferFromOffset(7) with streamOffset 6 len = %d, want 0", len(got))
+	}
+}
