@@ -28,7 +28,7 @@ services:
       ROOM_TWO_NAME: ${ROOM_TWO_NAME:-Room Two}
     volumes:
       - moo_data:/home/moo
-      - ./scripts/moo:/bootstrap:ro
+      - ${MOO_BOOTSTRAP_DIR}:/bootstrap:ro
     entrypoint:
       - /bin/sh
       - /bootstrap/bootstrap_moo.sh
