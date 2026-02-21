@@ -14,6 +14,7 @@ Architecture model: single upstream MOO connection, multiple concurrent WebSocke
 - Phase 5: minimal macOS app (done)
 
 See `SPEC.md` for protocol and scope rules.
+Testing instructions live in `TESTING.md`.
 
 ## Repository layout
 

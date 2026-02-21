@@ -59,3 +59,8 @@ When finishing work, include:
 - why it changed
 - how it was verified
 - any remaining risks/gaps
+
+## Testing doc maintenance
+
+- Keep `TESTING.md` current when test commands, manual validation flow, or runtime setup changes.
+- If a change affects human testing steps, update `TESTING.md` in the same commit when practical.
