@@ -2,6 +2,21 @@
 
 Human and automated testing guide for `moo-client`.
 
+## Install / checkout
+
+Clone the repository first:
+
+```bash
+git clone https://github.com/wainstead/moo-client.git
+cd moo-client
+```
+
+All commands below assume you are in the repo root:
+
+```bash
+cd /Users/swain/Projects/moo-client
+```
+
 ## Scope
 
 This document covers:
