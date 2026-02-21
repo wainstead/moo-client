@@ -55,17 +55,17 @@ swift build
 From repo root:
 
 ```bash
-cp .env.moo.example .env.moo   # optional
-./scripts/run_local_moo.sh up
-./scripts/run_local_moo.sh bootstrap
+cp .env.moo.example .env.moo   # optional: copy default local MOO credentials/settings
+./scripts/run_local_moo.sh up  # start LambdaMOO container in background
+./scripts/run_local_moo.sh bootstrap  # initialize wizard/user/rooms (safe to rerun)
 ```
 
 Useful lifecycle commands:
 
 ```bash
-./scripts/run_local_moo.sh logs
-./scripts/run_local_moo.sh down
-./scripts/run_local_moo.sh reset
+./scripts/run_local_moo.sh logs   # follow server logs (does not exit; press Ctrl-C to stop following)
+./scripts/run_local_moo.sh down   # stop containers, keep persistent DB volume
+./scripts/run_local_moo.sh reset  # stop containers and delete persistent DB volume
 ```
 
 ## 3. End-to-end smoke test (recommended)
