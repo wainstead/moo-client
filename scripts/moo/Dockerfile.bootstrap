@@ -1,0 +1,8 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache netcat-openbsd
+
+COPY bootstrap_moo.sh /bootstrap/bootstrap_moo.sh
+RUN chmod +x /bootstrap/bootstrap_moo.sh
+
+ENTRYPOINT ["/bin/sh", "/bootstrap/bootstrap_moo.sh"]

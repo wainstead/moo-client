@@ -12,7 +12,9 @@ services:
       - moo_data:/home/moo
 
   moo-bootstrap:
-    image: alpine:3.20
+    build:
+      context: scripts/moo
+      dockerfile: Dockerfile.bootstrap
     container_name: moo-bootstrap
     depends_on:
       - lambdamoo
@@ -28,10 +30,6 @@ services:
       ROOM_TWO_NAME: ${ROOM_TWO_NAME:-Room Two}
     volumes:
       - moo_data:/home/moo
-      - ${MOO_BOOTSTRAP_DIR}:/bootstrap:ro
-    entrypoint:
-      - /bin/sh
-      - /bootstrap/bootstrap_moo.sh
 
 volumes:
   moo_data:

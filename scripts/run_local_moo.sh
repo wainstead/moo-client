@@ -4,10 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.moo.yml"
 ENV_FILE="$ROOT_DIR/.env.moo"
-BOOTSTRAP_DIR="$ROOT_DIR/scripts/moo"
+BOOTSTRAP_SCRIPT="$ROOT_DIR/scripts/moo/bootstrap_moo.sh"
 
-if [[ ! -f "$BOOTSTRAP_DIR/bootstrap_moo.sh" ]]; then
-  echo "bootstrap script missing at $BOOTSTRAP_DIR/bootstrap_moo.sh"
+if [[ ! -f "$BOOTSTRAP_SCRIPT" ]]; then
+  echo "bootstrap script missing at $BOOTSTRAP_SCRIPT"
   exit 1
 fi
 
@@ -32,20 +32,20 @@ cmd="${1:-up}"
 
 case "$cmd" in
   up)
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" up -d lambdamoo
+    docker compose "${compose_args[@]}" up -d lambdamoo
     ;;
   bootstrap)
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" up -d lambdamoo
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" run --rm moo-bootstrap
+    docker compose "${compose_args[@]}" up -d lambdamoo
+    docker compose "${compose_args[@]}" run --rm moo-bootstrap
     ;;
   logs)
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" logs -f lambdamoo
+    docker compose "${compose_args[@]}" logs -f lambdamoo
     ;;
   down)
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" down
+    docker compose "${compose_args[@]}" down
     ;;
   reset)
-    MOO_BOOTSTRAP_DIR="$BOOTSTRAP_DIR" docker compose "${compose_args[@]}" down -v
+    docker compose "${compose_args[@]}" down -v
     ;;
   *)
     usage
