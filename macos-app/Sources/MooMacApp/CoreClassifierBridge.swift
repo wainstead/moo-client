@@ -91,6 +91,27 @@ final class CoreClassifierBridge {
            FileManager.default.isExecutableFile(atPath: bundled) {
             return bundled
         }
+        let cwd = env["PWD"] ?? FileManager.default.currentDirectoryPath
+        let devPath = URL(fileURLWithPath: cwd)
+            .appendingPathComponent("../core/target/debug/moo-core")
+            .standardizedFileURL.path
+        if FileManager.default.isExecutableFile(atPath: devPath) {
+            return devPath
+        }
+        if let resolved = lookupExecutableInPATH("moo-core") {
+            return resolved
+        }
         throw CoreBridgeError.binaryNotFound
+    }
+
+    private func lookupExecutableInPATH(_ name: String) -> String? {
+        let path = ProcessInfo.processInfo.environment["PATH"] ?? ""
+        for dir in path.split(separator: ":") {
+            let candidate = "\(dir)/\(name)"
+            if FileManager.default.isExecutableFile(atPath: candidate) {
+                return candidate
+            }
+        }
+        return nil
     }
 }
