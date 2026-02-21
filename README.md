@@ -27,6 +27,46 @@ Top-level convenience commands are available via `Makefile` (run `make help`).
 - `scripts/` run/test/bootstrap scripts
 - `docker-compose.moo.yml` local LambdaMOO container stack
 
+## Architecture
+
+```text
+                                 (TCP :7777)
+                      +-------------------------------+
+                      |       LambdaMOO Server        |
+                      |      (Docker/local host)      |
+                      +---------------+---------------+
+                                      ^
+                                      | raw upstream bytes
+                                      v
+                      +-------------------------------+
+                      |        PROXY (Go)             |
+                      |  proxy/cmd + proxy/internal   |
+                      |  - single upstream TCP session|
+                      |  - rolling buffer + RESUME    |
+                      +---------------+---------------+
+                                      ^
+                                      | WebSocket (/ws, :9000)
+                   +------------------+------------------+
+                   |                                     |
+                   v                                     v
+      +------------------------------+      +------------------------------+
+      |    macOS Client (SwiftUI)    |      |    iOS Client (SwiftUI)      |
+      |        macos-app/            |      |          ios-app/             |
+      +---------------+--------------+      +---------------+--------------+
+                      |                                     |
+                      | raw DATA lines                     | raw DATA lines
+                      v                                     v
+      +------------------------------+      +------------------------------+
+      |   Core Classifier (Rust)     |      |  iOS Core Classifier (Swift) |
+      |          core/               |      |         MooIOSCore            |
+      | Chat / Arrive / Leave/System |      | Chat / Arrive / Leave/System |
+      +------------------------------+      +------------------------------+
+
+Notes:
+- UI layers consume structured events; they do not parse raw network text directly.
+- Proxy is the shared transport/session authority for all connected clients.
+```
+
 ## Quick start (local)
 
 ### Prerequisites
