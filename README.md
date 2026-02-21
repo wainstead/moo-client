@@ -137,7 +137,7 @@ swift run MooIOSRelaySelfTest
 Proxy is intended to bind localhost only and be reached by SSH tunnel:
 
 ```bash
-ssh -L 9000:localhost:9000 panix
+ssh -L 9000:localhost:9000 <host>
 ```
 
 ```text
