@@ -39,7 +39,13 @@ case "$cmd" in
     docker compose "${compose_args[@]}" run --rm moo-bootstrap
     ;;
   logs)
-    docker compose "${compose_args[@]}" logs -f lambdamoo
+    if ! docker compose "${compose_args[@]}" logs -f lambdamoo; then
+      status=$?
+      if [[ "$status" -eq 130 ]]; then
+        exit 0
+      fi
+      exit "$status"
+    fi
     ;;
   down)
     docker compose "${compose_args[@]}" down
