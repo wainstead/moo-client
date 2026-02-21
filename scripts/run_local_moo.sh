@@ -9,6 +9,7 @@ compose_args=(-f "$COMPOSE_FILE")
 if [[ -f "$ENV_FILE" ]]; then
   compose_args+=(--env-file "$ENV_FILE")
 fi
+compose_args+=(--project-directory "$ROOT_DIR")
 
 usage() {
   cat <<USAGE
