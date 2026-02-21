@@ -9,12 +9,23 @@ let package = Package(
     ],
     products: [
         .library(name: "MooIOSRelay", targets: ["MooIOSRelay"]),
+        .library(name: "MooIOSCore", targets: ["MooIOSCore"]),
+        .library(name: "MooIOSUI", targets: ["MooIOSUI"]),
         .executable(name: "MooIOSRelaySelfTest", targets: ["MooIOSRelaySelfTest"]),
     ],
     targets: [
         .target(
             name: "MooIOSRelay",
             path: "Sources/MooIOSRelay"
+        ),
+        .target(
+            name: "MooIOSCore",
+            path: "Sources/MooIOSCore"
+        ),
+        .target(
+            name: "MooIOSUI",
+            dependencies: ["MooIOSRelay", "MooIOSCore"],
+            path: "Sources/MooIOSUI"
         ),
         .executableTarget(
             name: "MooIOSRelaySelfTest",
@@ -23,7 +34,7 @@ let package = Package(
         ),
         .testTarget(
             name: "MooIOSRelayTests",
-            dependencies: ["MooIOSRelay"],
+            dependencies: ["MooIOSRelay", "MooIOSCore", "MooIOSUI"],
             path: "Tests/MooIOSRelayTests"
         ),
     ]

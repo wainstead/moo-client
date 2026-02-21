@@ -21,6 +21,7 @@ See `SPEC.md` for protocol and scope rules.
 - `core/` Rust event classifier engine and CLI
 - `macos-app/` SwiftUI desktop client
 - `ios-app/` iOS relay client module (`HELLO`, `SEND`, `PING`, `RESUME`)
+  - includes iOS core classifier + minimal SwiftUI chat UI (occupants, messages, input)
 - `scripts/` run/test/bootstrap scripts
 - `docker-compose.moo.yml` local LambdaMOO container stack
 

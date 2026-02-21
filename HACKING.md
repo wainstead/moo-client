@@ -76,19 +76,23 @@ Key files:
 
 ### `ios-app/` (Swift)
 
-- Phase 7 relay client module (no UI yet).
+- Phase 7 relay client module and Phase 8 minimal SwiftUI UI.
 - Handles proxy protocol commands:
   - `HELLO <session-id>`
   - `RESUME <offset>`
   - `SEND <text>`
   - `PING`
 - Tracks session ID and last offset in a pluggable state store.
+- UI uses a core classification layer (`MooIOSCore`) so views do not parse raw relay text.
 
 Key files:
 - `ios-app/Sources/MooIOSRelay/MooRelayClient.swift`
 - `ios-app/Sources/MooIOSRelay/RelayProtocol.swift`
 - `ios-app/Sources/MooIOSRelay/RelayStateStore.swift`
 - `ios-app/Sources/MooIOSRelay/RelayStreamParser.swift`
+- `ios-app/Sources/MooIOSCore/CoreEvent.swift`
+- `ios-app/Sources/MooIOSUI/IOSChatViewModel.swift`
+- `ios-app/Sources/MooIOSUI/IOSChatView.swift`
 
 ## Local infra
 

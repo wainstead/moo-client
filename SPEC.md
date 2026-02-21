@@ -13,6 +13,7 @@ Protocol summary: line-oriented control over WebSocket text frames; `DATA` binar
 - Phase 5 (macOS UI): implemented
 - Phase 6 (LAN dev mode for proxy): implemented
 - Phase 7 (iOS relay client): implemented
+- Phase 8 (iOS minimal UI): implemented
 
 ## Next milestone
 
@@ -33,7 +34,6 @@ Deployment model remains unchanged:
 
 ## Planned phases
 
-- Phase 8: iOS minimal UI (occupants, messages, input)
 - Phase 9: iPhone sleep/resume validation checklist and fixes
 
 ## Locked protocol
