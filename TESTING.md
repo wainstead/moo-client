@@ -69,6 +69,13 @@ cp .env.moo.example .env.moo   # optional: copy default local MOO credentials/se
 ./scripts/run_local_moo.sh bootstrap  # initialize wizard/user/rooms (safe to rerun)
 ```
 
+If you had previous dev runs, clear stale proxies before testing:
+
+```bash
+make proxy-status      # show running mooproxy listeners/processes
+make proxy-down-all    # stop all local mooproxy processes
+```
+
 Useful lifecycle commands:
 
 ```bash

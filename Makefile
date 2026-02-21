@@ -2,7 +2,8 @@ SHELL := /bin/bash
 
 .PHONY: help build test e2e check clean \
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
-	proxy-test core-test ios-test macos-build
+	proxy-test core-test ios-test macos-build \
+	proxy-status proxy-down proxy-down-all
 
 help:
 	@echo "Available targets:"
@@ -16,6 +17,9 @@ help:
 	@echo "  make moo-logs      # Follow local MOO logs"
 	@echo "  make moo-down      # Stop local MOO stack"
 	@echo "  make moo-reset     # Stop local MOO stack and delete DB volume"
+	@echo "  make proxy-status  # Show running mooproxy listeners"
+	@echo "  make proxy-down    # Stop any process listening on TCP 9000"
+	@echo "  make proxy-down-all # Stop all local mooproxy processes"
 
 build:
 	cd proxy && go build ./...
@@ -63,3 +67,24 @@ moo-down:
 moo-reset:
 	./scripts/run_local_moo.sh reset
 
+proxy-status:
+	@echo "mooproxy listeners:"
+	@lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | awk '$$1=="mooproxy"' || true
+
+proxy-down:
+	@pids=$$(lsof -tiTCP:9000 -sTCP:LISTEN 2>/dev/null || true); \
+	if [[ -n "$$pids" ]]; then \
+	  echo "stopping listeners on :9000 -> $$pids"; \
+	  kill $$pids; \
+	else \
+	  echo "no listener on :9000"; \
+	fi
+
+proxy-down-all:
+	@pids=$$(pgrep -f mooproxy 2>/dev/null || true); \
+	if [[ -n "$$pids" ]]; then \
+	  echo "stopping mooproxy processes -> $$pids"; \
+	  kill $$pids; \
+	else \
+	  echo "no mooproxy processes found"; \
+	fi

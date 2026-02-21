@@ -91,6 +91,16 @@ cd moo-client
 
 This checks relay handshake, MOO login through proxy, command flow, and `PING`/`PONG`.
 
+### Clean up stale proxy processes
+
+If you suspect an old proxy process is still running:
+
+```bash
+make proxy-status
+make proxy-down       # stops listeners on TCP 9000
+make proxy-down-all   # stops all mooproxy processes
+```
+
 ## Build and test
 
 Preferred (repo root):
