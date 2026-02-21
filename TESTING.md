@@ -30,7 +30,7 @@ This document covers:
 
 ## 1. Automated verification
 
-From repo root `/Users/swain/Projects/moo-client`:
+From repo root:
 
 ```bash
 cd proxy
@@ -87,16 +87,16 @@ Expected final line:
 1. Build core binary:
 
 ```bash
-cd /Users/swain/Projects/moo-client/core
+cd core
 cargo build
 ```
 
 2. Run macOS app:
 
 ```bash
-cd /Users/swain/Projects/moo-client/macos-app
+cd macos-app
 MOO_WS_URL=ws://127.0.0.1:9000/ws \
-MOO_CORE_BIN=/Users/swain/Projects/moo-client/core/target/debug/moo-core \
+MOO_CORE_BIN=../core/target/debug/moo-core \
 swift run MooMacApp
 ```
 
@@ -114,13 +114,13 @@ Phase 8 provides iOS core + UI modules, but not a standalone iOS host app target
 
 To click test on iPhone now:
 1. Create a small iOS host app in Xcode.
-2. Add local package dependency: `/Users/swain/Projects/moo-client/ios-app`.
+2. Add local package dependency: `<path-to-repo>/ios-app`.
 3. Use `IOSChatViewModel` + `IOSChatView` in host app.
 4. Connect to laptop LAN proxy URL: `ws://<laptop-lan-ip>:9000/ws`.
 5. Ensure laptop proxy is running in LAN mode:
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 PROXY_MODE=lan ./scripts/run_proxy.sh
 ```
 

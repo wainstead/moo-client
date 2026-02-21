@@ -40,7 +40,7 @@ Testing instructions live in `TESTING.md`.
 ### Start local LambdaMOO
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 cp .env.moo.example .env.moo   # optional
 ./scripts/run_local_moo.sh up
 ./scripts/run_local_moo.sh bootstrap
@@ -49,7 +49,7 @@ cp .env.moo.example .env.moo   # optional
 ### Start proxy
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 ./scripts/run_proxy.sh
 ```
 
@@ -59,7 +59,7 @@ Upstream MOO: `127.0.0.1:7777`
 For iPhone-on-LAN development, use:
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 PROXY_MODE=lan ./scripts/run_proxy.sh
 ```
 
@@ -68,7 +68,7 @@ This binds `0.0.0.0:9000` (trusted local network only).
 ### Connect simple test client
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 ./scripts/run_client.sh
 ```
 
@@ -84,7 +84,7 @@ PING
 ### One-command smoke test
 
 ```bash
-cd /Users/swain/Projects/moo-client
+cd moo-client
 ./scripts/test_e2e.sh
 ```
 
@@ -93,18 +93,18 @@ This checks relay handshake, MOO login through proxy, command flow, and `PING`/`
 ## Build and test
 
 ```bash
-cd /Users/swain/Projects/moo-client/proxy
+cd proxy
 go test ./...
 go build ./...
 
-cd /Users/swain/Projects/moo-client/core
+cd ../core
 cargo test
 cargo build
 
-cd /Users/swain/Projects/moo-client/macos-app
+cd ../macos-app
 swift build
 
-cd /Users/swain/Projects/moo-client/ios-app
+cd ../ios-app
 swift build
 swift run MooIOSRelaySelfTest
 ```
