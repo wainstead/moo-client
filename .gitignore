@@ -1,4 +1,5 @@
 /core/target/
 /scripts/wslineclient/wslineclient
 /macos-app/.build/
+/ios-app/.build/
 /.env.moo

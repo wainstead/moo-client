@@ -19,7 +19,7 @@ See `SPEC.md` for protocol and scope rules.
 - `proxy/` Go WebSocket<->TCP relay
 - `core/` Rust event classifier engine and CLI
 - `macos-app/` SwiftUI desktop client
-- `ios-app/` iOS app placeholder
+- `ios-app/` iOS relay client module (`HELLO`, `SEND`, `PING`, `RESUME`)
 - `scripts/` run/test/bootstrap scripts
 - `docker-compose.moo.yml` local LambdaMOO container stack
 
@@ -100,6 +100,10 @@ cargo build
 
 cd /Users/swain/Projects/moo-client/macos-app
 swift build
+
+cd /Users/swain/Projects/moo-client/ios-app
+swift build
+swift run MooIOSRelaySelfTest
 ```
 
 ## Deploy model

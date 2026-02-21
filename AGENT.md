@@ -41,6 +41,7 @@ At minimum, run what is relevant to changed components:
 - Proxy: `cd proxy && go test ./... && go build ./...`
 - Core: `cd core && cargo test`
 - macOS app: `cd macos-app && swift build`
+- iOS relay module: `cd ios-app && swift build && swift run MooIOSRelaySelfTest`
 - End-to-end: `./scripts/test_e2e.sh`
 
 If a command cannot run in the current environment, state that explicitly.
@@ -58,4 +59,3 @@ When finishing work, include:
 - why it changed
 - how it was verified
 - any remaining risks/gaps
-

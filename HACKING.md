@@ -74,6 +74,22 @@ Key files:
 - `macos-app/Sources/MooMacApp/CoreClassifierBridge.swift`
 - `macos-app/Sources/MooMacApp/AppViewModel.swift`
 
+### `ios-app/` (Swift)
+
+- Phase 7 relay client module (no UI yet).
+- Handles proxy protocol commands:
+  - `HELLO <session-id>`
+  - `RESUME <offset>`
+  - `SEND <text>`
+  - `PING`
+- Tracks session ID and last offset in a pluggable state store.
+
+Key files:
+- `ios-app/Sources/MooIOSRelay/MooRelayClient.swift`
+- `ios-app/Sources/MooIOSRelay/RelayProtocol.swift`
+- `ios-app/Sources/MooIOSRelay/RelayStateStore.swift`
+- `ios-app/Sources/MooIOSRelay/RelayStreamParser.swift`
+
 ## Local infra
 
 ### LambdaMOO container
@@ -113,6 +129,13 @@ Run smoke test:
 
 ```bash
 ./scripts/test_e2e.sh
+```
+
+Run iOS relay self-test:
+
+```bash
+cd ios-app
+swift run MooIOSRelaySelfTest
 ```
 
 ## Known caveats
