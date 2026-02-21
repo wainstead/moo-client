@@ -11,11 +11,7 @@ git clone https://github.com/wainstead/moo-client.git
 cd moo-client
 ```
 
-All commands below assume you are in the repo root:
-
-```bash
-cd /Users/swain/Projects/moo-client
-```
+All commands below assume you are in the repo root.
 
 ## Scope
 
