@@ -1,0 +1,37 @@
+services:
+  lambdamoo:
+    image: wiredwizard/lambdamoo:1.8.3
+    container_name: moo-lambdamoo
+    tty: true
+    environment:
+      TZ: UTC
+      PORT: "7777"
+    ports:
+      - "127.0.0.1:7777:7777"
+    volumes:
+      - moo_data:/home/moo
+
+  moo-bootstrap:
+    image: alpine:3.20
+    container_name: moo-bootstrap
+    depends_on:
+      - lambdamoo
+    environment:
+      MOO_HOST: ${MOO_HOST:-lambdamoo}
+      MOO_PORT: ${MOO_PORT:-7777}
+      WIZARD_LOGIN: ${WIZARD_LOGIN:-wizard}
+      WIZARD_CONNECT_PASSWORD: ${WIZARD_CONNECT_PASSWORD:-}
+      WIZARD_PASSWORD: ${WIZARD_PASSWORD:-wizardtest}
+      REGULAR_USERNAME: ${REGULAR_USERNAME:-regular}
+      REGULAR_PASSWORD: ${REGULAR_PASSWORD:-regulartest}
+      ROOM_ONE_NAME: ${ROOM_ONE_NAME:-Room One}
+      ROOM_TWO_NAME: ${ROOM_TWO_NAME:-Room Two}
+    volumes:
+      - moo_data:/home/moo
+      - ./scripts/moo:/bootstrap:ro
+    entrypoint:
+      - /bin/sh
+      - /bootstrap/bootstrap_moo.sh
+
+volumes:
+  moo_data:
