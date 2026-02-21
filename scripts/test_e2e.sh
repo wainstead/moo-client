@@ -7,6 +7,7 @@ PATH="/opt/homebrew/bin:$PATH"
 PROXY_LOG="$(mktemp -t moo-proxy-log.XXXXXX)"
 CLIENT_LOG="$(mktemp -t moo-client-log.XXXXXX)"
 CLIENT_FIFO="$(mktemp -u -t moo-client-fifo.XXXXXX)"
+TEST_PORT=""
 PROXY_PID=""
 CLIENT_PID=""
 
@@ -31,6 +32,31 @@ fail() {
   exit 1
 }
 
+ensure_client_alive() {
+  if ! kill -0 "$CLIENT_PID" >/dev/null 2>&1; then
+    fail "test client exited unexpectedly"
+  fi
+}
+
+send_line() {
+  local line="$1"
+  ensure_client_alive
+  if ! printf '%s\n' "$line" >&3; then
+    fail "failed to write to test client"
+  fi
+}
+
+pick_free_port() {
+  local p
+  for p in $(seq 19000 19100); do
+    if ! nc -z 127.0.0.1 "$p" >/dev/null 2>&1; then
+      TEST_PORT="$p"
+      return 0
+    fi
+  done
+  fail "could not find a free localhost port for proxy test"
+}
+
 expect_pattern() {
   local pattern="$1"
   local timeout="${2:-20}"
@@ -51,41 +77,43 @@ echo "[INFO] Ensuring local LambdaMOO is running"
 "$ROOT_DIR/scripts/run_local_moo.sh" bootstrap >/dev/null
 
 echo "[INFO] Starting proxy"
+pick_free_port
+echo "[INFO] Using proxy test port $TEST_PORT"
 (
   cd "$ROOT_DIR"
-  GOCACHE=/tmp/go-build ./scripts/run_proxy.sh
+  LISTEN_ADDR="127.0.0.1:$TEST_PORT" GOCACHE=/tmp/go-build ./scripts/run_proxy.sh
 ) >"$PROXY_LOG" 2>&1 &
 PROXY_PID=$!
 
 for _ in $(seq 1 30); do
-  if nc -z 127.0.0.1 9000 >/dev/null 2>&1; then
+  if nc -z 127.0.0.1 "$TEST_PORT" >/dev/null 2>&1; then
     break
   fi
   sleep 1
 done
-nc -z 127.0.0.1 9000 >/dev/null 2>&1 || fail "proxy did not start on 127.0.0.1:9000"
+nc -z 127.0.0.1 "$TEST_PORT" >/dev/null 2>&1 || fail "proxy did not start on 127.0.0.1:$TEST_PORT"
 
 echo "[INFO] Connecting test client"
 mkfifo "$CLIENT_FIFO"
 (
   cd "$ROOT_DIR"
-  GOCACHE=/tmp/go-build ./scripts/run_client.sh <"$CLIENT_FIFO" >"$CLIENT_LOG" 2>&1
+  WS_URL="ws://127.0.0.1:$TEST_PORT/ws" GOCACHE=/tmp/go-build ./scripts/run_client.sh <"$CLIENT_FIFO" >"$CLIENT_LOG" 2>&1
 ) &
 CLIENT_PID=$!
 exec 3>"$CLIENT_FIFO"
 
 expect_pattern "WELCOME " 15 || fail "did not receive WELCOME"
 
-printf 'HELLO smoke-test\n' >&3
+send_line 'HELLO smoke-test'
 expect_pattern "DATA Welcome to the LambdaCore database" 20 || fail "did not receive LambdaMOO welcome text"
 
-printf 'SEND connect wizard wizardtest\n' >&3
+send_line 'SEND connect wizard wizardtest'
 expect_pattern "*** Connected ***" 20 || fail "wizard login failed through proxy"
 
-printf 'SEND look\n' >&3
+send_line 'SEND look'
 expect_pattern "The First Room" 20 || fail "look response missing"
 
-printf 'PING\n' >&3
+send_line 'PING'
 expect_pattern "PONG" 10 || fail "PING/PONG failed"
 
 echo "[PASS] e2e relay smoke test succeeded"
