@@ -1,6 +1,7 @@
 services:
   lambdamoo:
     image: wiredwizard/lambdamoo:1.8.3
+    platform: linux/amd64
     container_name: moo-lambdamoo
     tty: true
     environment:
