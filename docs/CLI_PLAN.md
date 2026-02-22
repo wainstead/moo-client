@@ -156,6 +156,8 @@ Add top-level task that runs both fixture suites and fails on divergence.
 - Add state file persistence (`session_id`, `last_offset`)
 - Add reconnect helpers and resume controls
 
+Status: complete
+
 ### Phase C
 
 - Add shared classifier fixtures

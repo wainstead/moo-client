@@ -147,6 +147,13 @@ Run CLI smoke test:
 make cli-smoke
 ```
 
+For manual reconnect debugging with persisted offset/session:
+
+```bash
+cd core
+cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws --state-file /tmp/moo-cli-state.json
+```
+
 Run full repo test suite:
 
 ```bash

@@ -105,7 +105,7 @@ Build and run `moo-cli`:
 
 ```bash
 make cli-build
-make cli-run
+make cli-run  # add --state-file /tmp/moo-cli-state.json for persisted resume state
 ```
 
 Then in the interactive session, try:
@@ -115,6 +115,8 @@ connect wizard wizardtest
 look
 /ping
 /offset
+/resume 0
+/reconnect
 /quit
 ```
 

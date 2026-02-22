@@ -67,8 +67,18 @@ Run against local proxy:
 cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws
 ```
 
+Persist session/offset state for reconnects:
+
+```bash
+cargo run --bin moo-cli -- connect \
+  --ws-url ws://127.0.0.1:9000/ws \
+  --state-file /tmp/moo-cli-state.json
+```
+
 Interactive commands:
 - plain text: send as `SEND <text>`
 - `/ping`: send `PING`
 - `/offset`: print current stream offset
+- `/resume <offset>`: set resume offset for next reconnect
+- `/reconnect [offset]`: reconnect using current (or provided) offset
 - `/quit`: exit

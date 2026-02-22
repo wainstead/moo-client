@@ -140,6 +140,13 @@ make cli-build
 make cli-run
 ```
 
+`moo-cli` now supports persisted session/offset state for resume testing:
+
+```bash
+cd core
+cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws --state-file /tmp/moo-cli-state.json
+```
+
 Scripted CLI smoke test:
 
 ```bash
