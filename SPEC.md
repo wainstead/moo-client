@@ -36,6 +36,20 @@ Deployment model remains unchanged:
 
 - Phase 9: iPhone sleep/resume validation checklist and fixes
 
+## Future deployment automation (planned, not implemented)
+
+Deployment helper scripts should be host-generic rather than provider-specific.
+
+Planned script naming:
+- `scripts/deploy_netbsd_host.sh`
+- `scripts/deploy_linux_host.sh` (later)
+
+Planned behavior:
+- caller provides host details and runtime settings as arguments
+- script does not hardcode a specific host (e.g., Panix)
+- NetBSD deployment should target only the Go proxy binary
+- default remote bind remains `127.0.0.1:9000` for SSH-tunnel usage
+
 ## Locked protocol
 
 Proxy model: single upstream TCP session to MOO, multiple WebSocket clients attached to that session.
