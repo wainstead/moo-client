@@ -99,6 +99,31 @@ Expected final line:
 [PASS] e2e relay smoke test succeeded
 ```
 
+## 3b. CLI debug flow (no GUI)
+
+Build and run `moo-cli`:
+
+```bash
+make cli-build
+make cli-run
+```
+
+Then in the interactive session, try:
+
+```text
+connect wizard wizardtest
+look
+/ping
+/offset
+/quit
+```
+
+Or run a scripted smoke check:
+
+```bash
+make cli-smoke
+```
+
 ## 4. Manual click test: macOS app
 
 1. Build core binary:

@@ -50,4 +50,25 @@ Event::Chat            [Rule 2: Arrive pattern?]
 
 - `src/lib.rs` classifier and event types
 - `src/main.rs` CLI adapter (`<offset>\t<line>` -> JSON event)
+- `src/bin/moo-cli.rs` interactive proxy debug client
 - `tests/classify.rs` classifier test suite
+
+## `moo-cli` (debug client)
+
+Build:
+
+```bash
+cargo build --bin moo-cli
+```
+
+Run against local proxy:
+
+```bash
+cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws
+```
+
+Interactive commands:
+- plain text: send as `SEND <text>`
+- `/ping`: send `PING`
+- `/offset`: print current stream offset
+- `/quit`: exit

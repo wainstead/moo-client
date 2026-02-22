@@ -133,6 +133,19 @@ cd moo-client
 
 This checks relay handshake, MOO login through proxy, command flow, and `PING`/`PONG`.
 
+### CLI debug client (no GUI)
+
+```bash
+make cli-build
+make cli-run
+```
+
+Scripted CLI smoke test:
+
+```bash
+make cli-smoke
+```
+
 ### Clean up stale proxy processes
 
 If you suspect an old proxy process is still running:

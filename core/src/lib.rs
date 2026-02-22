@@ -3,16 +3,30 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 static CHAT_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^([^:]+):\s+(.*)$").expect("chat regex"));
-static ARRIVE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(.+) has arrived\.$").expect("arrive regex"));
+static ARRIVE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(.+) has arrived\.$").expect("arrive regex"));
 static LEAVE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(.+) has left\.$").expect("leave regex"));
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Event {
-    Chat { speaker: String, message: String, offset: u64 },
-    Arrive { who: String, offset: u64 },
-    Leave { who: String, offset: u64 },
-    System { text: String, offset: u64 },
+    Chat {
+        speaker: String,
+        message: String,
+        offset: u64,
+    },
+    Arrive {
+        who: String,
+        offset: u64,
+    },
+    Leave {
+        who: String,
+        offset: u64,
+    },
+    System {
+        text: String,
+        offset: u64,
+    },
 }
 
 pub fn classify_line(line: &str, offset: u64) -> Event {

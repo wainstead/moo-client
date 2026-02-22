@@ -141,6 +141,12 @@ Run smoke test:
 make e2e
 ```
 
+Run CLI smoke test:
+
+```bash
+make cli-smoke
+```
+
 Run full repo test suite:
 
 ```bash

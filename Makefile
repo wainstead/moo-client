@@ -3,7 +3,8 @@ SHELL := /bin/bash
 .PHONY: help build test e2e check clean \
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
-	proxy-status proxy-down proxy-down-all down-everything
+	proxy-status proxy-down proxy-down-all down-everything \
+	cli-build cli-run cli-smoke
 
 help:
 	@echo "Available targets:"
@@ -21,6 +22,9 @@ help:
 	@echo "  make proxy-down    # Stop any process listening on TCP 9000"
 	@echo "  make proxy-down-all # Stop all local mooproxy processes"
 	@echo "  make down-everything # Stop local MOO stack and all mooproxy processes"
+	@echo "  make cli-build     # Build moo-cli (Rust debug client)"
+	@echo "  make cli-run       # Run moo-cli against local proxy"
+	@echo "  make cli-smoke     # Run scripted moo-cli smoke test"
 
 build:
 	cd proxy && go build ./...
@@ -93,3 +97,12 @@ proxy-down-all:
 down-everything:
 	@$(MAKE) moo-down
 	@$(MAKE) proxy-down-all
+
+cli-build:
+	cd core && cargo build --bin moo-cli
+
+cli-run:
+	cd core && cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws
+
+cli-smoke:
+	./scripts/test_cli_smoke.sh

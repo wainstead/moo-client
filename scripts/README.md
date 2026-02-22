@@ -7,6 +7,7 @@ Key scripts:
 - `run_proxy.sh`: launch Go proxy
 - `run_client.sh`: line client for manual protocol testing
 - `test_e2e.sh`: end-to-end smoke test
+- `test_cli_smoke.sh`: scripted smoke test for Rust `moo-cli`
 
 Subfolders:
 - `moo/`: bootstrap assets/scripts for local MOO initialization
