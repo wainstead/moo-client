@@ -15,6 +15,8 @@ This plan focuses on closing risk gaps and making test results more deterministi
 
 ### 1. Proxy behavior integration tests (highest value)
 
+Status: planned
+
 Add focused integration tests around relay invariants in `proxy/internal`:
 - single upstream TCP session with multiple WebSocket clients
 - attach/detach behavior with no unintended upstream reconnect
@@ -35,6 +37,8 @@ Deliverables:
 
 ### 2. Deterministic fake-MOO harness
 
+Status: planned
+
 Create a lightweight scripted TCP test server used by proxy tests:
 - emits controlled upstream byte sequences
 - supports scripted disconnects and timing points
@@ -51,6 +55,8 @@ Deliverables:
 
 ### 3. Classifier fixture corpus expansion
 
+Status: in progress
+
 Extend shared fixtures in `fixtures/classifier_fixtures.jsonl`:
 - real transcript-derived lines
 - CRLF and blank-line edge cases
@@ -66,6 +72,8 @@ Deliverables:
 
 ### 4. Long-run resilience tests
 
+Status: planned
+
 Add stress-style tests for session continuity and replay correctness:
 - repeated reconnect loops (e.g., 100 cycles)
 - randomized sequences of send/reconnect/wait/ping
@@ -80,6 +88,8 @@ Deliverables:
 
 ### 5. Coverage gating policy
 
+Status: in progress
+
 Evolve from reporting-only to enforceable quality gates:
 - keep `make coverage` summary
 - add `make coverage-check` with initial low thresholds by component
@@ -93,6 +103,8 @@ Deliverables:
 - CI failure on threshold regressions
 
 ### 6. CI lane separation
+
+Status: planned
 
 Split test execution by speed/scope:
 - fast lane (per PR):
@@ -109,6 +121,8 @@ Deliverables:
 - docs for local reproduction of each lane
 
 ### 7. Human acceptance checklist for invisible reconnect
+
+Status: in progress
 
 Define a formal human-run checklist for the milestone:
 - sleeping client resumes with no MOO-visible disconnect/reconnect message

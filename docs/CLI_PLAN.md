@@ -174,7 +174,7 @@ Status: complete
 
 Status: complete
 
-## Makefile integration (planned)
+## Makefile integration (complete)
 
 Add targets:
 
@@ -183,11 +183,15 @@ Add targets:
 - `make cli-smoke`
 - `make classifier-parity`
 
-## Documentation updates (planned)
+Status: complete
+
+## Documentation updates (complete)
 
 - `README.md`: quick CLI debug section
 - `TESTING.md`: CLI-first troubleshooting and scenario steps
 - `core/README.md`: CLI usage examples
+
+Status: complete
 
 ## Risks and considerations
 

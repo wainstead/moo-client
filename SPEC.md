@@ -36,6 +36,19 @@ Deployment model remains unchanged:
 
 - Phase 9: iPhone sleep/resume validation checklist and fixes
 
+### Phase 9 completion criteria (definition)
+
+Phase 9 is complete when all of the following pass in one reproducible run:
+
+1. iPhone client logs in through the proxy and reaches normal command flow.
+2. iPhone app is backgrounded/sleeps long enough for observer traffic to occur.
+3. A second client (observer) confirms no visible disconnect/reconnect artifact for the sleeping session.
+4. iPhone resumes and receives missed output via `RESUME` replay with no user-visible gaps.
+5. The run is captured with the human acceptance checklist in `TESTING.md`.
+6. Any reconnect-visibility or continuity bugs found in this flow are fixed and re-verified.
+
+Related planning: `docs/TEST_STRATEGY_PLAN.md` (item 7).
+
 ## Future deployment automation (planned, not implemented)
 
 Deployment helper scripts should be host-generic rather than provider-specific.

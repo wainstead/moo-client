@@ -191,6 +191,16 @@ For reconnect validation:
 3. Produce room messages from another client.
 4. Reconnect and confirm missed lines are replayed.
 
+Phase 9 acceptance run (iPhone invisible reconnect) pass criteria:
+- observer client does not see disconnect/reconnect text for the sleeping iPhone session
+- iPhone resumes and sees continuity (no missing expected lines during suspend window)
+- iPhone can continue sending commands after resume
+
+Failure criteria:
+- any reconnect artifact visible to observer
+- missing expected lines after resume
+- failed command flow after resume
+
 ## 7. Test data defaults
 
 From `.env.moo.example` defaults:
@@ -204,3 +214,11 @@ From `.env.moo.example` defaults:
 When changing behavior, protocol handling, scripts, app launch flow, or validation commands:
 - update `TESTING.md` in the same commit when practical
 - include new expected outputs or failure signatures where useful
+
+## 9. Strategy roadmap tracking
+
+Longer-term testing roadmap and priorities are tracked in:
+- `docs/TEST_STRATEGY_PLAN.md`
+
+Use this file (`TESTING.md`) for runnable procedures and expected outcomes.
+Use the strategy plan for planned/in-progress improvements.

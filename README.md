@@ -20,6 +20,26 @@ Architecture model: single upstream MOO connection, multiple concurrent WebSocke
 See `SPEC.md` for protocol and scope rules.
 Testing instructions live in `TESTING.md`.
 Top-level convenience commands are available via `Makefile` (run `make help`).
+Development guidelines live in `HACKING.md`.
+Coding-agent constraints live in `AGENT.md`.
+
+## Remaining work
+
+- Phase 9: iPhone sleep/resume validation checklist and fixes (see `SPEC.md` and `TESTING.md`)
+- Testing strategy roadmap items in `docs/TEST_STRATEGY_PLAN.md`
+- Host deployment helper scripts are planned (not implemented yet):
+  - `scripts/deploy_netbsd_host.sh`
+  - `scripts/deploy_linux_host.sh` (later)
+
+## Documentation map
+
+- `SPEC.md`: protocol, phase scope, and deployment planning
+- `TESTING.md`: automated and manual test procedures
+- `HACKING.md`: contributor workflow and architectural constraints
+- `AGENT.md`: coding-agent operating rules for this repo
+- `STATUS.md`: single-page project phase/testing status
+- `docs/CLI_PLAN.md`: CLI design and implementation plan/history
+- `docs/TEST_STRATEGY_PLAN.md`: testing roadmap and priorities
 
 ## Repository layout
 
@@ -239,6 +259,8 @@ Proxy is intended to bind localhost only and be reached by SSH tunnel:
 ```bash
 ssh -L 9000:localhost:9000 <host>
 ```
+
+Deployment automation scripts are planned but not implemented yet (tracked in `SPEC.md`).
 
 ```text
 ______       _ _ _              _ _   _         
