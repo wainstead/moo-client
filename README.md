@@ -12,6 +12,10 @@ Architecture model: single upstream MOO connection, multiple concurrent WebSocke
 - Phase 3: resume by upstream byte offset (done)
 - Phase 4: Rust core event classifier (`Chat`, `Arrive`, `Leave`, `System`) (done)
 - Phase 5: minimal macOS app (done)
+- Phase 6: proxy LAN dev mode for phone-on-LAN testing (done)
+- Phase 7: iOS relay client (`HELLO`, `RESUME`, `SEND`, `PING`) (done)
+- Phase 8: minimal iOS chat UI layer (done)
+- CLI plan (A-D): interactive/debug CLI, persisted resume state, classifier parity fixtures, scripted scenarios (done)
 
 See `SPEC.md` for protocol and scope rules.
 Testing instructions live in `TESTING.md`.
