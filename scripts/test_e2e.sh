@@ -73,6 +73,8 @@ expect_pattern() {
 }
 
 echo "[INFO] Ensuring local LambdaMOO is running"
+echo "[INFO] Resetting local LambdaMOO state"
+"$ROOT_DIR/scripts/run_local_moo.sh" reset >/dev/null || true
 "$ROOT_DIR/scripts/run_local_moo.sh" up >/dev/null
 "$ROOT_DIR/scripts/run_local_moo.sh" bootstrap >/dev/null
 
@@ -110,10 +112,13 @@ send_line 'HELLO smoke-test'
 expect_pattern "DATA " 5 || true
 
 send_line 'SEND connect wizard wizardtest'
-expect_pattern "*** Connected ***" 40 || fail "wizard login failed through proxy"
+# Some runs show "*** Connected ***"; others may emit
+# "*** Redirecting old connection to this port ***" first.
+# We validate successful login by checking that a post-login command works.
+expect_pattern "*** Connected ***" 5 || true
 
 send_line 'SEND look'
-expect_pattern "The First Room" 20 || fail "look response missing"
+expect_pattern "The First Room" 20 || fail "look response missing (login may have failed)"
 
 send_line 'PING'
 expect_pattern "PONG" 10 || fail "PING/PONG failed"

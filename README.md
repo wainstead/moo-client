@@ -132,6 +132,7 @@ cd moo-client
 ```
 
 This checks relay handshake, MOO login through proxy, command flow, and `PING`/`PONG`.
+It resets local MOO state first to avoid stale-session flakes.
 
 ### CLI debug client (no GUI)
 
@@ -169,6 +170,8 @@ Scenario smoke test:
 ```bash
 make cli-scenario
 ```
+
+`cli-smoke` and `cli-scenario` also reset local MOO state before running.
 
 Classifier parity check (shared fixtures across Rust and Swift):
 

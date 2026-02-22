@@ -95,6 +95,8 @@ Runs relay + login + command-flow checks against local MOO:
 ./scripts/test_e2e.sh
 ```
 
+Note: this script performs a local MOO `reset` first (recreates the Docker volume) to avoid stale-session flakes.
+
 Expected final line:
 
 ```text
@@ -127,6 +129,8 @@ Or run a scripted smoke check:
 ```bash
 make cli-smoke
 ```
+
+Note: `cli-smoke` and `cli-scenario` also reset local MOO state before running.
 
 Run scripted scenario mode check:
 

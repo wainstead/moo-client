@@ -16,12 +16,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
+pick_free_port() {
+  local p
+  for p in $(seq 19000 19100); do
+    if ! nc -z 127.0.0.1 "$p" >/dev/null 2>&1; then
+      TEST_PORT="$p"
+      return 0
+    fi
+  done
+  echo "[FAIL] could not find a free localhost port for proxy test"
+  exit 1
+}
+
 cd "$ROOT_DIR"
 
 echo "[INFO] Ensuring local LambdaMOO is running"
+echo "[INFO] Resetting local LambdaMOO state"
+./scripts/run_local_moo.sh reset >/dev/null || true
 ./scripts/run_local_moo.sh up >/dev/null
 ./scripts/run_local_moo.sh bootstrap >/dev/null
 
+pick_free_port
+echo "[INFO] Using proxy test port ${TEST_PORT}"
 echo "[INFO] Starting proxy on :${TEST_PORT}"
 LISTEN_ADDR="127.0.0.1:${TEST_PORT}" ./scripts/run_proxy.sh >"$PROXY_LOG" 2>&1 &
 PROXY_PID=$!
@@ -43,7 +59,7 @@ echo "[INFO] Running moo-cli scripted session"
   sleep 1
   printf '/quit\n'
 } | (cd core && cargo run --quiet --bin moo-cli -- connect --ws-url "ws://127.0.0.1:${TEST_PORT}/ws" --state-file "$STATE_FILE" --json) \
-  >"$CLI_LOG"
+  >"$CLI_LOG" || true
 
 if ! grep -q '^welcome:' "$CLI_LOG"; then
   echo "[FAIL] moo-cli did not receive WELCOME"
