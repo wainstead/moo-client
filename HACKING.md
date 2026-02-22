@@ -172,6 +172,12 @@ Run full repo test suite:
 make test
 ```
 
+Run multi-language coverage summary:
+
+```bash
+make coverage
+```
+
 Run only iOS relay self-test:
 
 ```bash

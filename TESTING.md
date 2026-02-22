@@ -34,6 +34,7 @@ Preferred (from repo root):
 
 ```bash
 make test   # language-level checks
+make coverage  # multi-language coverage summary
 make e2e    # end-to-end smoke test against local MOO
 make classifier-parity  # shared Rust/Swift classifier fixture parity
 make cli-scenario  # scripted moo-cli scenario smoke test

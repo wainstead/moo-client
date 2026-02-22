@@ -196,12 +196,17 @@ Preferred (repo root):
 
 ```bash
 make test
+make coverage
 make e2e
 make classifier-parity
 make cli-scenario
 # or:
 make check
 ```
+
+Coverage notes:
+- `make coverage` reports Go + Swift coverage with built-in tooling.
+- Rust line coverage is included when `cargo-llvm-cov` is installed; otherwise Rust is reported as skipped.
 
 Equivalent per-component commands:
 

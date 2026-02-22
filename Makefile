@@ -4,12 +4,13 @@ SHELL := /bin/bash
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
 	proxy-status proxy-down proxy-down-all down-everything \
-	cli-build cli-run cli-smoke cli-scenario classifier-parity
+	cli-build cli-run cli-smoke cli-scenario classifier-parity coverage
 
 help:
 	@echo "Available targets:"
 	@echo "  make build         # Build all components"
 	@echo "  make test          # Run language-level tests"
+	@echo "  make coverage      # Run multi-language test coverage summary"
 	@echo "  make e2e           # Run end-to-end smoke test"
 	@echo "  make check         # test + e2e"
 	@echo "  make clean         # Remove local build artifacts"
@@ -114,3 +115,6 @@ cli-scenario:
 
 classifier-parity:
 	./scripts/test_classifier_parity.sh
+
+coverage:
+	./scripts/test_coverage.sh
