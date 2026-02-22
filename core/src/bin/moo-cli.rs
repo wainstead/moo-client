@@ -8,6 +8,7 @@ use moo_core::classify_line;
 use serde::{Deserialize, Serialize};
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
+use tokio::time::{sleep, Duration};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 #[derive(Parser, Debug)]
@@ -46,6 +47,39 @@ enum Commands {
         #[arg(long)]
         trace: bool,
     },
+
+    /// Run scripted scenario mode (for deterministic smoke/CI checks).
+    Scenario {
+        #[arg(long, default_value = "ws://127.0.0.1:9000/ws")]
+        ws_url: String,
+
+        #[arg(long)]
+        session_id: Option<String>,
+
+        #[arg(long)]
+        resume_offset: Option<u64>,
+
+        #[arg(long)]
+        state_file: Option<PathBuf>,
+
+        #[arg(long)]
+        no_resume: bool,
+
+        #[arg(long)]
+        raw: bool,
+
+        #[arg(long)]
+        json: bool,
+
+        #[arg(long)]
+        trace: bool,
+
+        #[arg(long)]
+        scenario_file: PathBuf,
+
+        #[arg(long, default_value_t = 250)]
+        step_ms: u64,
+    },
 }
 
 #[derive(Debug)]
@@ -59,6 +93,7 @@ enum Command {
     Send(String),
     Ping,
     Offset,
+    Wait(u64),
     Resume(u64),
     Reconnect(Option<u64>),
     Quit,
@@ -83,40 +118,6 @@ struct SessionState {
     current_offset: u64,
 }
 
-#[tokio::main]
-async fn main() {
-    let cli = Cli::parse();
-
-    match cli.command {
-        Commands::Connect {
-            ws_url,
-            session_id,
-            resume_offset,
-            state_file,
-            no_resume,
-            raw,
-            json,
-            trace,
-        } => {
-            if let Err(err) = run_connect(ConnectConfig {
-                ws_url,
-                session_id,
-                resume_offset,
-                state_file,
-                no_resume,
-                raw,
-                json,
-                trace,
-            })
-            .await
-            {
-                eprintln!("moo-cli error: {err}");
-                std::process::exit(1);
-            }
-        }
-    }
-}
-
 #[derive(Debug)]
 struct ConnectConfig {
     ws_url: String,
@@ -129,7 +130,91 @@ struct ConnectConfig {
     trace: bool,
 }
 
-async fn run_connect(config: ConnectConfig) -> Result<(), Box<dyn std::error::Error>> {
+enum InputMode {
+    Stdin,
+    Scenario { lines: Vec<String>, step_ms: u64 },
+}
+
+#[tokio::main]
+async fn main() {
+    let cli = Cli::parse();
+
+    let result = match cli.command {
+        Commands::Connect {
+            ws_url,
+            session_id,
+            resume_offset,
+            state_file,
+            no_resume,
+            raw,
+            json,
+            trace,
+        } => {
+            run_connect(
+                ConnectConfig {
+                    ws_url,
+                    session_id,
+                    resume_offset,
+                    state_file,
+                    no_resume,
+                    raw,
+                    json,
+                    trace,
+                },
+                InputMode::Stdin,
+            )
+            .await
+        }
+        Commands::Scenario {
+            ws_url,
+            session_id,
+            resume_offset,
+            state_file,
+            no_resume,
+            raw,
+            json,
+            trace,
+            scenario_file,
+            step_ms,
+        } => {
+            let lines = match load_scenario_lines(&scenario_file) {
+                Ok(v) => v,
+                Err(err) => {
+                    eprintln!(
+                        "failed to load scenario file {}: {err}",
+                        scenario_file.display()
+                    );
+                    std::process::exit(1);
+                }
+            };
+
+            run_connect(
+                ConnectConfig {
+                    ws_url,
+                    session_id,
+                    resume_offset,
+                    state_file,
+                    no_resume,
+                    raw,
+                    json,
+                    trace,
+                },
+                InputMode::Scenario { lines, step_ms },
+            )
+            .await
+        }
+    };
+
+    if let Err(err) = result {
+        eprintln!("moo-cli error: {err}");
+        std::process::exit(1);
+    }
+}
+
+async fn run_connect(
+    config: ConnectConfig,
+    input_mode: InputMode,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut state = resolve_initial_state(
         config.session_id.clone(),
         config.resume_offset,
@@ -139,7 +224,10 @@ async fn run_connect(config: ConnectConfig) -> Result<(), Box<dyn std::error::Er
     save_state_if_enabled(config.state_file.as_deref(), &state)?;
 
     let (tx, mut rx) = mpsc::unbounded_channel::<Outbound>();
-    spawn_stdin_task(tx);
+    match input_mode {
+        InputMode::Stdin => spawn_stdin_task(tx),
+        InputMode::Scenario { lines, step_ms } => spawn_scenario_task(tx, lines, step_ms),
+    }
 
     loop {
         let control = run_single_connection(&config, &mut state, &mut rx).await?;
@@ -158,6 +246,13 @@ async fn run_single_connection(
     state: &mut SessionState,
     rx: &mut mpsc::UnboundedReceiver<Outbound>,
 ) -> Result<LoopControl, Box<dyn std::error::Error>> {
+    if config.trace {
+        println!(
+            "trace: connect ws_url={} session_id={} resume_offset={}",
+            config.ws_url, state.session_id, state.current_offset
+        );
+    }
+
     let (stream, _) = connect_async(&config.ws_url).await?;
     println!("connected: {}", config.ws_url);
 
@@ -168,12 +263,19 @@ async fn run_single_connection(
             format!("HELLO {}\n", state.session_id).into(),
         ))
         .await?;
+    if config.trace {
+        println!("trace: sent HELLO {}", state.session_id);
+    }
+
     if !config.no_resume && state.current_offset > 0 {
         write
             .send(Message::Text(
                 format!("RESUME {}\n", state.current_offset).into(),
             ))
             .await?;
+        if config.trace {
+            println!("trace: sent RESUME {}", state.current_offset);
+        }
     }
 
     let mut receive_buffer: Vec<u8> = Vec::new();
@@ -185,13 +287,25 @@ async fn run_single_connection(
                     Some(Outbound::RawLine(line)) => {
                         match parse_command(&line) {
                             Command::Send(text) => {
+                                if config.trace {
+                                    println!("trace: sent SEND {}", text);
+                                }
                                 write.send(Message::Text(format!("SEND {text}\n").into())).await?;
                             }
                             Command::Ping => {
+                                if config.trace {
+                                    println!("trace: sent PING");
+                                }
                                 write.send(Message::Text("PING\n".into())).await?;
                             }
                             Command::Offset => {
                                 println!("offset={}", state.current_offset);
+                            }
+                            Command::Wait(wait_ms) => {
+                                if config.trace {
+                                    println!("trace: wait {wait_ms}ms");
+                                }
+                                sleep(Duration::from_millis(wait_ms)).await;
                             }
                             Command::Resume(new_offset) => {
                                 state.current_offset = new_offset;
@@ -205,9 +319,15 @@ async fn run_single_connection(
                                     save_state_if_enabled(config.state_file.as_deref(), state)?;
                                 }
                                 println!("reconnecting...");
+                                if config.trace {
+                                    println!("trace: reconnect requested");
+                                }
                                 return Ok(LoopControl::Reconnect);
                             }
                             Command::Quit => {
+                                if config.trace {
+                                    println!("trace: quit requested");
+                                }
                                 return Ok(LoopControl::Exit);
                             }
                             Command::Unknown(raw) => {
@@ -216,6 +336,9 @@ async fn run_single_connection(
                         }
                     }
                     Some(Outbound::Quit) | None => {
+                        if config.trace {
+                            println!("trace: input ended");
+                        }
                         return Ok(LoopControl::Exit);
                     }
                 }
@@ -231,10 +354,19 @@ async fn run_single_connection(
                                 println!("raw-control: {line}");
                             }
                             if line == "PONG" {
+                                if config.trace {
+                                    println!("trace: recv PONG");
+                                }
                                 println!("pong");
                             } else if let Some(rest) = line.strip_prefix("WELCOME ") {
+                                if config.trace {
+                                    println!("trace: recv WELCOME {rest}");
+                                }
                                 println!("welcome: {rest}");
                             } else {
+                                if config.trace {
+                                    println!("trace: recv control {line}");
+                                }
                                 println!("control: {line}");
                             }
                         }
@@ -249,6 +381,13 @@ async fn run_single_connection(
                         let payload = &bin[5..];
                         if config.raw {
                             println!("raw-data-bytes: {}", payload.len());
+                        }
+                        if config.trace {
+                            println!(
+                                "trace: recv DATA chunk={} offset_before={}",
+                                payload.len(),
+                                state.current_offset
+                            );
                         }
                         receive_buffer.extend_from_slice(payload);
 
@@ -273,12 +412,18 @@ async fn run_single_connection(
                         }
                     }
                     Some(Ok(Message::Close(_))) => {
+                        if config.trace {
+                            println!("trace: server sent close");
+                        }
                         println!("server closed connection");
                         return Ok(LoopControl::Exit);
                     }
                     Some(Ok(_)) => {}
                     Some(Err(err)) => return Err(Box::new(err)),
                     None => {
+                        if config.trace {
+                            println!("trace: websocket stream ended");
+                        }
                         println!("connection ended");
                         return Ok(LoopControl::Exit);
                     }
@@ -292,7 +437,9 @@ fn spawn_stdin_task(tx: mpsc::UnboundedSender<Outbound>) {
     tokio::spawn(async move {
         let stdin = io::stdin();
         let mut reader = BufReader::new(stdin).lines();
-        println!("interactive mode: type text to SEND, /ping, /offset, /quit");
+        println!(
+            "interactive mode: type text to SEND, /ping, /offset, /wait <ms>, /reconnect [offset], /quit"
+        );
 
         loop {
             match reader.next_line().await {
@@ -312,6 +459,31 @@ fn spawn_stdin_task(tx: mpsc::UnboundedSender<Outbound>) {
             }
         }
     });
+}
+
+fn spawn_scenario_task(tx: mpsc::UnboundedSender<Outbound>, lines: Vec<String>, step_ms: u64) {
+    tokio::spawn(async move {
+        for line in lines {
+            if tx.send(Outbound::RawLine(line)).is_err() {
+                return;
+            }
+            sleep(Duration::from_millis(step_ms)).await;
+        }
+        let _ = tx.send(Outbound::Quit);
+    });
+}
+
+fn load_scenario_lines(path: &Path) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let input = fs::read_to_string(path)?;
+    let mut out = Vec::new();
+    for raw in input.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        out.push(line.to_string());
+    }
+    Ok(out)
 }
 
 fn default_session_id() -> String {
@@ -334,6 +506,12 @@ fn parse_command(line: &str) -> Command {
     }
     if line == "/quit" {
         return Command::Quit;
+    }
+    if let Some(arg) = line.strip_prefix("/wait ") {
+        return match arg.trim().parse::<u64>() {
+            Ok(wait_ms) => Command::Wait(wait_ms),
+            Err(_) => Command::Unknown(line.to_string()),
+        };
     }
     if let Some(arg) = line.strip_prefix("/resume ") {
         return match arg.trim().parse::<u64>() {
@@ -412,17 +590,18 @@ fn save_state_if_enabled(
 #[cfg(test)]
 mod tests {
     use super::{
-        load_state_if_enabled, parse_command, save_state_if_enabled, Command, SessionState,
+        load_scenario_lines, load_state_if_enabled, parse_command, save_state_if_enabled, Command,
+        SessionState,
     };
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    fn unique_path() -> std::path::PathBuf {
+    fn unique_path(prefix: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        std::env::temp_dir().join(format!("moo-cli-state-{nanos}.json"))
+        std::env::temp_dir().join(format!("{prefix}-{nanos}.tmp"))
     }
 
     #[test]
@@ -442,8 +621,16 @@ mod tests {
     }
 
     #[test]
+    fn parses_wait_with_millis() {
+        match parse_command("/wait 250") {
+            Command::Wait(250) => {}
+            other => panic!("unexpected command: {other:?}"),
+        }
+    }
+
+    #[test]
     fn state_file_round_trip() {
-        let path = unique_path();
+        let path = unique_path("moo-cli-state");
         let state = SessionState {
             session_id: "test-session".to_string(),
             current_offset: 999,
@@ -456,6 +643,17 @@ mod tests {
 
         assert_eq!(loaded.session_id, "test-session");
         assert_eq!(loaded.last_offset, 999);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn scenario_loader_skips_comments_and_blank_lines() {
+        let path = unique_path("moo-cli-scenario");
+        fs::write(&path, "# comment\n\nlook\n/reconnect\n").expect("write scenario");
+
+        let lines = load_scenario_lines(&path).expect("load scenario");
+        assert_eq!(lines, vec!["look".to_string(), "/reconnect".to_string()]);
+
         let _ = fs::remove_file(path);
     }
 }

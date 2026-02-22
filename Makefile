@@ -4,7 +4,7 @@ SHELL := /bin/bash
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
 	proxy-status proxy-down proxy-down-all down-everything \
-	cli-build cli-run cli-smoke classifier-parity
+	cli-build cli-run cli-smoke cli-scenario classifier-parity
 
 help:
 	@echo "Available targets:"
@@ -25,6 +25,7 @@ help:
 	@echo "  make cli-build     # Build moo-cli (Rust debug client)"
 	@echo "  make cli-run       # Run moo-cli against local proxy"
 	@echo "  make cli-smoke     # Run scripted moo-cli smoke test"
+	@echo "  make cli-scenario  # Run scripted moo-cli scenario smoke test"
 	@echo "  make classifier-parity # Verify Rust/Swift classifier parity on shared fixtures"
 
 build:
@@ -50,7 +51,7 @@ test: proxy-test core-test ios-test macos-build
 e2e:
 	./scripts/test_e2e.sh
 
-check: test e2e
+check: test e2e classifier-parity cli-scenario
 
 clean:
 	rm -rf core/target
@@ -107,6 +108,9 @@ cli-run:
 
 cli-smoke:
 	./scripts/test_cli_smoke.sh
+
+cli-scenario:
+	./scripts/test_cli_scenario.sh
 
 classifier-parity:
 	./scripts/test_classifier_parity.sh

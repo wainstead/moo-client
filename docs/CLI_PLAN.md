@@ -172,6 +172,8 @@ Status: complete
 - Add richer tracing and scripted scenario mode
 - Integrate CLI scenario checks into CI flow
 
+Status: complete
+
 ## Makefile integration (planned)
 
 Add targets:

@@ -72,6 +72,15 @@ Run against local proxy:
 cargo run --bin moo-cli -- connect --ws-url ws://127.0.0.1:9000/ws
 ```
 
+Run scenario mode:
+
+```bash
+cargo run --bin moo-cli -- scenario \
+  --ws-url ws://127.0.0.1:9000/ws \
+  --scenario-file ../scripts/scenarios/resume_scenario.txt \
+  --json --trace
+```
+
 Persist session/offset state for reconnects:
 
 ```bash
@@ -84,6 +93,7 @@ Interactive commands:
 - plain text: send as `SEND <text>`
 - `/ping`: send `PING`
 - `/offset`: print current stream offset
+- `/wait <ms>`: pause local command processing (useful in scenario scripts)
 - `/resume <offset>`: set resume offset for next reconnect
 - `/reconnect [offset]`: reconnect using current (or provided) offset
 - `/quit`: exit

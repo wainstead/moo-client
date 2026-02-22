@@ -153,6 +153,23 @@ Scripted CLI smoke test:
 make cli-smoke
 ```
 
+Scripted scenario mode (with richer trace output):
+
+```bash
+cd core
+cargo run --bin moo-cli -- scenario \
+  --ws-url ws://127.0.0.1:9000/ws \
+  --scenario-file ../scripts/scenarios/resume_scenario.txt \
+  --state-file /tmp/moo-cli-state.json \
+  --json --trace
+```
+
+Scenario smoke test:
+
+```bash
+make cli-scenario
+```
+
 Classifier parity check (shared fixtures across Rust and Swift):
 
 ```bash
@@ -178,6 +195,7 @@ Preferred (repo root):
 make test
 make e2e
 make classifier-parity
+make cli-scenario
 # or:
 make check
 ```

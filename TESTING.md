@@ -36,8 +36,9 @@ Preferred (from repo root):
 make test   # language-level checks
 make e2e    # end-to-end smoke test against local MOO
 make classifier-parity  # shared Rust/Swift classifier fixture parity
+make cli-scenario  # scripted moo-cli scenario smoke test
 # or:
-make check  # test + e2e
+make check  # test + e2e + classifier parity + cli scenario
 ```
 
 Equivalent manual commands:
@@ -125,6 +126,12 @@ Or run a scripted smoke check:
 
 ```bash
 make cli-smoke
+```
+
+Run scripted scenario mode check:
+
+```bash
+make cli-scenario
 ```
 
 ## 4. Manual click test: macOS app

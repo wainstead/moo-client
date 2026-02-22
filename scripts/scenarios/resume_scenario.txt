@@ -1,0 +1,11 @@
+# Scripted moo-cli scenario for reconnect/resume debug flow.
+connect wizard wizardtest
+/wait 400
+look
+/offset
+/ping
+/reconnect
+/wait 400
+look
+/offset
+/quit

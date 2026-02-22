@@ -147,6 +147,12 @@ Run CLI smoke test:
 make cli-smoke
 ```
 
+Run scripted CLI scenario smoke test:
+
+```bash
+make cli-scenario
+```
+
 Run shared classifier parity check:
 
 ```bash
