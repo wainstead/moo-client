@@ -11,6 +11,25 @@ TEST_PORT=""
 PROXY_PID=""
 CLIENT_PID=""
 
+kill_port_listener() {
+  local port="$1"
+  local pids
+
+  if [[ -z "$port" ]]; then
+    return 0
+  fi
+
+  pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+  if [[ -n "$pids" ]]; then
+    kill $pids >/dev/null 2>&1 || true
+    sleep 0.2
+    pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+    if [[ -n "$pids" ]]; then
+      kill -9 $pids >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
 cleanup() {
   set +e
   if [[ -n "$CLIENT_PID" ]]; then
@@ -19,6 +38,7 @@ cleanup() {
   if [[ -n "$PROXY_PID" ]]; then
     kill "$PROXY_PID" >/dev/null 2>&1 || true
   fi
+  kill_port_listener "$TEST_PORT"
   rm -f "$CLIENT_FIFO" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT

@@ -7,11 +7,31 @@ PROXY_LOG="$(mktemp)"
 STATE_FILE="$(mktemp)"
 TEST_PORT="${MOO_PROXY_TEST_PORT:-19000}"
 
+kill_port_listener() {
+  local port="$1"
+  local pids
+
+  if [[ -z "$port" ]]; then
+    return 0
+  fi
+
+  pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+  if [[ -n "$pids" ]]; then
+    kill $pids >/dev/null 2>&1 || true
+    sleep 0.2
+    pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+    if [[ -n "$pids" ]]; then
+      kill -9 $pids >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
 cleanup() {
   if [[ -n "${PROXY_PID:-}" ]]; then
     kill "$PROXY_PID" >/dev/null 2>&1 || true
     wait "$PROXY_PID" >/dev/null 2>&1 || true
   fi
+  kill_port_listener "$TEST_PORT"
   rm -f "$CLI_LOG" "$PROXY_LOG" "$STATE_FILE"
 }
 trap cleanup EXIT
