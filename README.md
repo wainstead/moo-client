@@ -189,7 +189,7 @@ If you suspect an old proxy process is still running:
 
 ```bash
 make everything-down  # recommended: stop MOO stack + all mooproxy processes
-make everything-up    # start MOO + local proxy on :9000
+make everything-up    # start MOO + bootstrap + fresh local proxy on :9000
 make proxy-status
 make proxy-down       # stops listeners on TCP 9000
 make proxy-down-all   # stops all mooproxy processes
