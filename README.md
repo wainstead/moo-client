@@ -188,7 +188,8 @@ make classifier-parity
 If you suspect an old proxy process is still running:
 
 ```bash
-make down-everything  # recommended: stop MOO stack + all mooproxy processes
+make everything-down  # recommended: stop MOO stack + all mooproxy processes
+make everything-up    # start MOO + local proxy on :9000
 make proxy-status
 make proxy-down       # stops listeners on TCP 9000
 make proxy-down-all   # stops all mooproxy processes

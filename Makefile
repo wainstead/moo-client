@@ -3,7 +3,7 @@ SHELL := /bin/bash
 .PHONY: help build test e2e check clean \
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
-	proxy-status proxy-down proxy-down-all down-everything \
+	proxy-status proxy-down proxy-down-all everything-up everything-down down-everything \
 	cli-build cli-run cli-smoke cli-scenario classifier-parity coverage
 
 help:
@@ -22,7 +22,8 @@ help:
 	@echo "  make proxy-status  # Show running mooproxy listeners"
 	@echo "  make proxy-down    # Stop any process listening on TCP 9000"
 	@echo "  make proxy-down-all # Stop all local mooproxy processes"
-	@echo "  make down-everything # Stop local MOO stack and all mooproxy processes"
+	@echo "  make everything-up # Start local MOO and proxy on 127.0.0.1:9000"
+	@echo "  make everything-down # Stop local MOO stack and all mooproxy processes"
 	@echo "  make cli-build     # Build moo-cli (Rust debug client)"
 	@echo "  make cli-run       # Run moo-cli against local proxy"
 	@echo "  make cli-smoke     # Run scripted moo-cli smoke test"
@@ -97,9 +98,29 @@ proxy-down-all:
 	  echo "no mooproxy processes found"; \
 	fi
 
-down-everything:
+everything-up:
+	@$(MAKE) moo-up
+	@pids=$$(lsof -tiTCP:9000 -sTCP:LISTEN 2>/dev/null || true); \
+	if [[ -n "$$pids" ]]; then \
+	  echo "listener already running on :9000 -> $$pids"; \
+	  echo "use 'make proxy-down' first if you want a fresh proxy process"; \
+	else \
+	  (cd proxy && nohup go run ./cmd/mooproxy -mode local -listen 127.0.0.1:9000 -upstream 127.0.0.1:7777 >/tmp/mooproxy.log 2>&1 &); \
+	  sleep 1; \
+	  pids=$$(lsof -tiTCP:9000 -sTCP:LISTEN 2>/dev/null || true); \
+	  if [[ -n "$$pids" ]]; then \
+	    echo "started proxy on :9000 -> $$pids (log: /tmp/mooproxy.log)"; \
+	  else \
+	    echo "failed to start proxy on :9000; check /tmp/mooproxy.log"; \
+	    exit 1; \
+	  fi; \
+	fi
+
+everything-down:
 	@$(MAKE) moo-down
 	@$(MAKE) proxy-down-all
+
+down-everything: everything-down
 
 cli-build:
 	cd core && cargo build --bin moo-cli
