@@ -36,10 +36,19 @@ public enum CoreEventClassifier {
         }
 
         let speaker = String(line[..<idx]).trimmingCharacters(in: .whitespaces)
-        let msgStart = line.index(after: idx)
-        let message = String(line[msgStart...]).trimmingCharacters(in: .whitespaces)
+        var cursor = line.index(after: idx)
 
-        guard !speaker.isEmpty, !message.isEmpty else {
+        guard cursor < line.endIndex, line[cursor].isWhitespace else {
+            return nil
+        }
+
+        while cursor < line.endIndex, line[cursor].isWhitespace {
+            cursor = line.index(after: cursor)
+        }
+
+        let message = String(line[cursor...])
+
+        guard !speaker.isEmpty else {
             return nil
         }
 

@@ -7,5 +7,6 @@ Targets:
 - `MooIOSCore`: structured event classification on iOS side
 - `MooIOSUI`: minimal SwiftUI view model + chat UI
 - `MooIOSRelaySelfTest`: executable smoke checks for relay/parser behavior
+- `MooIOSCoreFixtureRunner`: executable for shared classifier fixture parity checks
 
 This package currently provides reusable modules. A standalone iOS host app target is not yet in-repo.

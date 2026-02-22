@@ -1,0 +1,6 @@
+{"line":"Frog: hello there","offset":12,"expected":{"kind":"chat","speaker":"Frog","message":"hello there","offset":12}}
+{"line":"Wizard has arrived.","offset":21,"expected":{"kind":"arrive","who":"Wizard","offset":21}}
+{"line":"Guest has left.","offset":33,"expected":{"kind":"leave","who":"Guest","offset":33}}
+{"line":"*** Connected to LambdaMOO ***","offset":5,"expected":{"kind":"system","text":"*** Connected to LambdaMOO ***","offset":5}}
+{"line":"Frog: hello:world","offset":8,"expected":{"kind":"chat","speaker":"Frog","message":"hello:world","offset":8}}
+{"line":"Frog:hello","offset":9,"expected":{"kind":"system","text":"Frog:hello","offset":9}}

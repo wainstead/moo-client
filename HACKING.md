@@ -147,6 +147,12 @@ Run CLI smoke test:
 make cli-smoke
 ```
 
+Run shared classifier parity check:
+
+```bash
+make classifier-parity
+```
+
 For manual reconnect debugging with persisted offset/session:
 
 ```bash

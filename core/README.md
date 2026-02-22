@@ -51,7 +51,12 @@ Event::Chat            [Rule 2: Arrive pattern?]
 - `src/lib.rs` classifier and event types
 - `src/main.rs` CLI adapter (`<offset>\t<line>` -> JSON event)
 - `src/bin/moo-cli.rs` interactive proxy debug client
+- `src/bin/classifier-fixture-dump.rs` emits normalized fixture outputs
 - `tests/classify.rs` classifier test suite
+- `tests/classify_fixtures.rs` shared-fixture classifier tests
+
+Shared fixture corpus:
+- `../fixtures/classifier_fixtures.jsonl`
 
 ## `moo-cli` (debug client)
 

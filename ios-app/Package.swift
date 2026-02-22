@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "MooIOSCore", targets: ["MooIOSCore"]),
         .library(name: "MooIOSUI", targets: ["MooIOSUI"]),
         .executable(name: "MooIOSRelaySelfTest", targets: ["MooIOSRelaySelfTest"]),
+        .executable(name: "MooIOSCoreFixtureRunner", targets: ["MooIOSCoreFixtureRunner"]),
     ],
     targets: [
         .target(
@@ -31,6 +32,11 @@ let package = Package(
             name: "MooIOSRelaySelfTest",
             dependencies: ["MooIOSRelay"],
             path: "Sources/MooIOSRelaySelfTest"
+        ),
+        .executableTarget(
+            name: "MooIOSCoreFixtureRunner",
+            dependencies: ["MooIOSCore"],
+            path: "Sources/MooIOSCoreFixtureRunner"
         ),
         .testTarget(
             name: "MooIOSRelayTests",

@@ -35,6 +35,7 @@ Preferred (from repo root):
 ```bash
 make test   # language-level checks
 make e2e    # end-to-end smoke test against local MOO
+make classifier-parity  # shared Rust/Swift classifier fixture parity
 # or:
 make check  # test + e2e
 ```

@@ -153,6 +153,12 @@ Scripted CLI smoke test:
 make cli-smoke
 ```
 
+Classifier parity check (shared fixtures across Rust and Swift):
+
+```bash
+make classifier-parity
+```
+
 ### Clean up stale proxy processes
 
 If you suspect an old proxy process is still running:
@@ -171,6 +177,7 @@ Preferred (repo root):
 ```bash
 make test
 make e2e
+make classifier-parity
 # or:
 make check
 ```

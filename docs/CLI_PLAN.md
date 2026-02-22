@@ -165,6 +165,8 @@ Status: complete
 - Add Swift fixture runner/tests
 - Add parity check target
 
+Status: complete
+
 ### Phase D
 
 - Add richer tracing and scripted scenario mode

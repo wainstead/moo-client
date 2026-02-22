@@ -4,7 +4,7 @@ SHELL := /bin/bash
 	moo-up moo-bootstrap moo-logs moo-down moo-reset \
 	proxy-test core-test ios-test macos-build \
 	proxy-status proxy-down proxy-down-all down-everything \
-	cli-build cli-run cli-smoke
+	cli-build cli-run cli-smoke classifier-parity
 
 help:
 	@echo "Available targets:"
@@ -25,6 +25,7 @@ help:
 	@echo "  make cli-build     # Build moo-cli (Rust debug client)"
 	@echo "  make cli-run       # Run moo-cli against local proxy"
 	@echo "  make cli-smoke     # Run scripted moo-cli smoke test"
+	@echo "  make classifier-parity # Verify Rust/Swift classifier parity on shared fixtures"
 
 build:
 	cd proxy && go build ./...
@@ -106,3 +107,6 @@ cli-run:
 
 cli-smoke:
 	./scripts/test_cli_smoke.sh
+
+classifier-parity:
+	./scripts/test_classifier_parity.sh
