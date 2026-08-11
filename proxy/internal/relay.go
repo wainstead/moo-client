@@ -162,9 +162,12 @@ func (r *Relay) handleLine(c *client, line string) error {
 		oldestOffset, streamOffset := r.offsetWindowLocked()
 		actualOffset := clampResumeOffset(offset, oldestOffset, streamOffset)
 		missing := r.bufferFromOffsetLocked(actualOffset)
-		dropped := r.sendClientLocked(c, outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)})
-		c.resumeHandled = true
-		c.nextOffset = streamOffset
+		dropped := r.sendClientLocked(c, outbound{opcode: opText, data: []byte("RESUMED " + strconv.FormatUint(actualOffset, 10))})
+		if dropped == nil {
+			dropped = r.sendClientLocked(c, outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)})
+			c.resumeHandled = true
+			c.nextOffset = streamOffset
+		}
 		r.mu.Unlock()
 		r.tracef("ws client=%d RESUME requested_offset=%d actual_offset=%d oldest_offset=%d stream_offset=%d replay_bytes=%d", c.id, offset, actualOffset, oldestOffset, streamOffset, len(missing))
 		r.removeDroppedClient(dropped)

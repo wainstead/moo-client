@@ -23,6 +23,11 @@ public final class RelayStreamParser {
         self.currentOffset = initialOffset
     }
 
+    public func resetOffset(_ offset: UInt64) {
+        receiveBuffer.removeAll()
+        currentOffset = offset
+    }
+
     public func appendDataPayload(_ payload: Data) -> ParsedDataChunk {
         receiveBuffer.append(payload)
 

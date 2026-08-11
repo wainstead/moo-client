@@ -42,6 +42,15 @@ final class RelayProtocolTests: XCTestCase {
         }
     }
 
+    func testRelayControlParseResumed() {
+        let got = RelayControl.parse(line: "RESUMED 42")
+        if case let .resumed(offset) = got {
+            XCTAssertEqual(offset, 42)
+        } else {
+            XCTFail("expected .resumed, got \(got)")
+        }
+    }
+
     func testRelayControlParseUnknown() {
         let got = RelayControl.parse(line: "DATA something")
         if case let .unknown(line) = got {

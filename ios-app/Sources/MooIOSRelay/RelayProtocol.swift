@@ -22,12 +22,16 @@ public enum RelayCommand: Equatable {
 
 public enum RelayControl: Equatable {
     case welcome(sessionID: String)
+    case resumed(offset: UInt64)
     case pong
     case unknown(line: String)
 
     public static func parse(line: String) -> RelayControl {
         if line.hasPrefix("WELCOME ") {
             return .welcome(sessionID: String(line.dropFirst("WELCOME ".count)))
+        }
+        if line.hasPrefix("RESUMED "), let offset = UInt64(line.dropFirst("RESUMED ".count)) {
+            return .resumed(offset: offset)
         }
         if line == "PONG" {
             return .pong

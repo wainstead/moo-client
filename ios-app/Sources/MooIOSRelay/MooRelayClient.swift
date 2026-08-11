@@ -88,6 +88,10 @@ public final class MooRelayClient {
             switch RelayControl.parse(line: line) {
             case let .welcome(sessionID):
                 onConnected?(sessionID)
+            case let .resumed(offset):
+                parser.resetOffset(offset)
+                stateStore.lastOffset = offset
+                onSystem?("RESUMED \(offset)")
             case .pong:
                 onPong?()
             case let .unknown(value):
