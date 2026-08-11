@@ -72,6 +72,7 @@ Offset semantics: offset is the 0-based index of the next upstream byte expected
 Client -> Proxy:
 - HELLO <session-id>
 - RESUME <offset>
+- RESUME_LIVE
 - SEND <text>\n
 - PING
 
@@ -83,3 +84,4 @@ Proxy -> Client:
 
 `RESUMED <actual-offset>` is sent after each accepted `RESUME` and before any replayed `DATA`.
 Clients must reset their next expected byte offset to `<actual-offset>` before parsing later `DATA`.
+`RESUME_LIVE` requests no replay; the proxy replies with `RESUMED <current-stream-offset>` and then delivers only later live `DATA`.

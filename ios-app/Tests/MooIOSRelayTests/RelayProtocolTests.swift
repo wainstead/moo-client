@@ -16,6 +16,11 @@ final class RelayProtocolTests: XCTestCase {
         XCTAssertEqual(cmd.encodeLine(), "RESUME 4096\n")
     }
 
+    func testRelayCommandEncodeResumeLive() {
+        let cmd = RelayCommand.resumeLive
+        XCTAssertEqual(cmd.encodeLine(), "RESUME_LIVE\n")
+    }
+
     func testRelayCommandEncodeSend() {
         let cmd = RelayCommand.send(text: "look")
         XCTAssertEqual(cmd.encodeLine(), "SEND look\n")

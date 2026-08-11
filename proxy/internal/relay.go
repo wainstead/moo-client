@@ -144,6 +144,18 @@ func (r *Relay) handleLine(c *client, line string) error {
 	case strings.HasPrefix(line, "HELLO "):
 		r.tracef("ws client=%d HELLO", c.id)
 		return nil
+	case line == "RESUME_LIVE":
+		r.mu.Lock()
+		streamOffset := r.streamOffset
+		dropped := r.sendClientLocked(c, outbound{opcode: opText, data: []byte("RESUMED " + strconv.FormatUint(streamOffset, 10))})
+		if dropped == nil {
+			c.resumeHandled = true
+			c.nextOffset = streamOffset
+		}
+		r.mu.Unlock()
+		r.tracef("ws client=%d RESUME_LIVE actual_offset=%d", c.id, streamOffset)
+		r.removeDroppedClient(dropped)
+		return nil
 	case line == "PING":
 		r.tracef("ws client=%d PING", c.id)
 		c.send <- outbound{opcode: opText, data: []byte("PONG")}

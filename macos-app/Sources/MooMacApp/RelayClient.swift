@@ -40,6 +40,8 @@ final class RelayClient {
         send(line: "HELLO \(sessionID)")
         if let offset = resumeOffset {
             send(line: "RESUME \(offset)")
+        } else {
+            send(line: "RESUME_LIVE")
         }
 
         receiveLoop()

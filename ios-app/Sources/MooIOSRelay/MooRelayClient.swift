@@ -32,6 +32,8 @@ public final class MooRelayClient {
         send(.hello(sessionID: stateStore.sessionID))
         if sendResume {
             send(.resume(offset: stateStore.lastOffset))
+        } else {
+            send(.resumeLive)
         }
 
         receiveLoop()

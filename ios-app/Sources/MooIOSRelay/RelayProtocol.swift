@@ -3,6 +3,7 @@ import Foundation
 public enum RelayCommand: Equatable {
     case hello(sessionID: String)
     case resume(offset: UInt64)
+    case resumeLive
     case send(text: String)
     case ping
 
@@ -12,6 +13,8 @@ public enum RelayCommand: Equatable {
             return "HELLO \(sessionID)\n"
         case let .resume(offset):
             return "RESUME \(offset)\n"
+        case .resumeLive:
+            return "RESUME_LIVE\n"
         case let .send(text):
             return "SEND \(text)\n"
         case .ping:

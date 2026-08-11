@@ -26,6 +26,7 @@ Priority order:
 Client -> Proxy
 - `HELLO <session-id>`
 - `RESUME <offset>`
+- `RESUME_LIVE`
 - `SEND <text>\n`
 - `PING`
 
@@ -37,6 +38,7 @@ Proxy -> Client
 
 Offsets are against raw upstream byte stream.
 `RESUMED <actual-offset>` is sent after each accepted `RESUME` and before any replayed `DATA`; clients must reset their next expected byte offset to `<actual-offset>` before parsing later `DATA`.
+`RESUME_LIVE` requests no replay and establishes the live boundary at the current stream offset before later `DATA`.
 
 ## Main components
 

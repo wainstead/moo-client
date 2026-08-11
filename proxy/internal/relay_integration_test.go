@@ -89,6 +89,29 @@ func TestRelayDoesNotDeliverLiveDataBeforeResume(t *testing.T) {
 	}
 }
 
+func TestRelayNoResumeEstablishesLiveBoundary(t *testing.T) {
+	h := newRelayHarness(t, 128)
+	h.emit("before\n")
+	h.waitForOffset(7)
+
+	c := h.connectClient(t)
+	defer c.close()
+	c.expectWelcome(t)
+	c.writeText(t, "HELLO live\nRESUME_LIVE\n")
+	if got := c.readText(t, time.Second); got != "RESUMED 7" {
+		t.Fatalf("live resume control = %q, want %q", got, "RESUMED 7")
+	}
+	if got := c.collectDataUntilIdle(t, 100*time.Millisecond); len(got) != 0 {
+		t.Fatalf("replay in live mode = %q, want none", string(got))
+	}
+
+	h.emit("after\n")
+	live := c.collectDataUntilIdle(t, 100*time.Millisecond)
+	if string(live) != "after\n" {
+		t.Fatalf("live bytes = %q, want %q", string(live), "after\n")
+	}
+}
+
 func TestRelayResumeHandlesStaleAndFutureOffsets(t *testing.T) {
 	h := newRelayHarness(t, 8)
 	h.emit("abcdefghxyz")
