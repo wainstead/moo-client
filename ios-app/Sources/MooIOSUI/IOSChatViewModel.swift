@@ -45,31 +45,34 @@ public final class IOSChatViewModel: ObservableObject {
         }
 
         let client = MooRelayClient(wsURL: wsURL, stateStore: stateStore)
-        client.onConnected = { [weak self] sessionID in
+        client.onConnected = { [weak self, weak client] sessionID in
             Task { @MainActor in
-                self?.isConnected = true
-                self?.currentOffset = stateStore.lastOffset
-                self?.appendDebug("WELCOME \(sessionID)", offset: stateStore.lastOffset)
-                self?.systemMessages.append(IOSSystemMessage(text: "WELCOME \(sessionID)", offset: stateStore.lastOffset))
+                guard let self, let client, self.relay === client else { return }
+                self.isConnected = true
+                self.currentOffset = stateStore.lastOffset
+                self.appendDebug("WELCOME \(sessionID)", offset: stateStore.lastOffset)
+                self.systemMessages.append(IOSSystemMessage(text: "WELCOME \(sessionID)", offset: stateStore.lastOffset))
             }
         }
-        client.onSystem = { [weak self] text in
+        client.onSystem = { [weak self, weak client] text in
             Task { @MainActor in
-                self?.currentOffset = stateStore.lastOffset
-                self?.appendDebug(text, offset: stateStore.lastOffset)
-                self?.systemMessages.append(IOSSystemMessage(text: text, offset: stateStore.lastOffset))
+                guard let self, let client, self.relay === client else { return }
+                self.currentOffset = stateStore.lastOffset
+                self.appendDebug(text, offset: stateStore.lastOffset)
+                self.systemMessages.append(IOSSystemMessage(text: text, offset: stateStore.lastOffset))
                 if text.hasPrefix("connection closed") {
-                    self?.isConnected = false
-                    self?.relay = nil
+                    self.isConnected = false
+                    self.relay = nil
                 }
             }
         }
-        client.onRawLine = { [weak self] line, offset in
+        client.onRawLine = { [weak self, weak client] line, offset in
             let event = CoreEventClassifier.classify(line: line, offset: offset)
             Task { @MainActor in
-                self?.currentOffset = offset
-                self?.appendDebug("DATA offset=\(offset) \(line)", offset: offset)
-                self?.apply(event)
+                guard let self, let client, self.relay === client else { return }
+                self.currentOffset = offset
+                self.appendDebug("DATA offset=\(offset) \(line)", offset: offset)
+                self.apply(event)
             }
         }
 
