@@ -44,7 +44,7 @@ func main() {
 	defer c.conn.Close()
 
 	fmt.Println("Connected:", wsURL)
-	fmt.Println("Type protocol lines (e.g., HELLO test-session, SEND connect guest, PING)")
+	fmt.Println("Type protocol lines (e.g., HELLO test-session, RESUME 0, SEND connect guest, PING)")
 
 	go func() {
 		for {

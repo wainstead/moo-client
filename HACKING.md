@@ -44,7 +44,7 @@ Offsets are against raw upstream byte stream.
 - Accepts WebSocket clients.
 - Broadcasts upstream bytes as `DATA`.
 - Maintains stream offset and 1 MB rolling buffer.
-- Supports `RESUME <offset>` replay from available window.
+- Supports explicit `RESUME <offset>` replay from available window.
 
 Key files:
 - `proxy/cmd/mooproxy/main.go`

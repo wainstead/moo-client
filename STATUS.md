@@ -23,12 +23,12 @@ Project status snapshot for `moo-client`.
 ## Testing strategy status
 
 Tracked in `docs/TEST_STRATEGY_PLAN.md`:
-- Proxy integration tests with deterministic harness: planned
+- Proxy integration tests with deterministic harness: first slice complete
 - Classifier fixture expansion/parity: in progress
 - Coverage gating policy: in progress
 - CI fast/slow lane split: planned
 - Long-run resilience suite: planned
-- Human acceptance checklist for invisible reconnect: in progress
+- Human acceptance checklist for invisible reconnect: in progress; in-repo iPhone sample added
 
 ## Deployment automation status
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,12 +23,14 @@ type Relay struct {
 	streamOffset uint64
 	buffer       *ringBuffer
 	writeMu      sync.Mutex
+	nextClientID uint64
+	trace        bool
 }
 
 type client struct {
-	conn       *wsConn
-	send       chan outbound
-	replaySent bool
+	conn *wsConn
+	send chan outbound
+	id   uint64
 }
 
 type outbound struct {
@@ -36,6 +39,10 @@ type outbound struct {
 }
 
 func NewRelay(upstream net.Conn) (*Relay, error) {
+	return newRelayWithBufferCapacity(upstream, 1<<20)
+}
+
+func newRelayWithBufferCapacity(upstream net.Conn, bufferCapacity int) (*Relay, error) {
 	sid, err := newSessionID()
 	if err != nil {
 		return nil, err
@@ -45,7 +52,8 @@ func NewRelay(upstream net.Conn) (*Relay, error) {
 		sessionID: sid,
 		upstream:  upstream,
 		clients:   map[*client]struct{}{},
-		buffer:    newRingBuffer(1 << 20),
+		buffer:    newRingBuffer(bufferCapacity),
+		trace:     os.Getenv("MOO_PROXY_TRACE") == "1",
 	}, nil
 }
 
@@ -61,13 +69,18 @@ func (r *Relay) RunUpstreamPump() {
 			chunk := append([]byte(nil), buf[:n]...)
 
 			r.mu.Lock()
+			startOffset := r.streamOffset
 			r.streamOffset += uint64(len(chunk))
+			endOffset := r.streamOffset
 			r.buffer.Append(chunk)
+			oldestOffset := r.streamOffset - uint64(r.buffer.length)
 			r.mu.Unlock()
 
+			r.tracef("upstream read bytes=%d start_offset=%d end_offset=%d oldest_offset=%d", len(chunk), startOffset, endOffset, oldestOffset)
 			r.broadcast(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
 		}
 		if err != nil {
+			r.tracef("upstream read stopped: %v", err)
 			r.markUpstreamDown()
 			return
 		}
@@ -81,7 +94,11 @@ func (r *Relay) HandleWS(conn *wsConn) {
 	}
 
 	r.addClient(c)
-	defer r.removeClient(c)
+	r.tracef("ws client=%d attach", c.id)
+	defer func() {
+		r.tracef("ws client=%d detach", c.id)
+		r.removeClient(c)
+	}()
 
 	go c.conn.writeLoop(c.send)
 	c.send <- outbound{opcode: opText, data: []byte("WELCOME " + r.sessionID)}
@@ -122,38 +139,32 @@ func (r *Relay) handleLine(c *client, line string) error {
 
 	switch {
 	case strings.HasPrefix(line, "HELLO "):
-		if !c.replaySent {
-			if recent := r.latestBuffer(); len(recent) > 0 {
-				c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), recent...)}
-			}
-			c.replaySent = true
-		}
+		r.tracef("ws client=%d HELLO", c.id)
 		return nil
 	case line == "PING":
+		r.tracef("ws client=%d PING", c.id)
 		c.send <- outbound{opcode: opText, data: []byte("PONG")}
 		return nil
 	case strings.HasPrefix(line, "SEND "):
-		return r.sendUpstream([]byte(strings.TrimPrefix(line, "SEND ") + "\n"))
+		payload := []byte(strings.TrimPrefix(line, "SEND ") + "\n")
+		r.tracef("ws client=%d SEND bytes=%d", c.id, len(payload))
+		return r.sendUpstream(payload)
 	case strings.HasPrefix(line, "RESUME "):
 		offsetStr := strings.TrimSpace(strings.TrimPrefix(line, "RESUME "))
 		offset, err := strconv.ParseUint(offsetStr, 10, 64)
 		if err != nil {
 			return errors.New("invalid resume offset")
 		}
-		if missing := r.bufferFromOffset(offset); len(missing) > 0 {
+		oldestOffset, streamOffset := r.offsetWindow()
+		missing := r.bufferFromOffset(offset)
+		r.tracef("ws client=%d RESUME requested_offset=%d oldest_offset=%d stream_offset=%d replay_bytes=%d", c.id, offset, oldestOffset, streamOffset, len(missing))
+		if len(missing) > 0 {
 			c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)}
 		}
-		c.replaySent = true
 		return nil
 	default:
 		return nil
 	}
-}
-
-func (r *Relay) latestBuffer() []byte {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.buffer.Snapshot()
 }
 
 func (r *Relay) bufferFromOffset(offset uint64) []byte {
@@ -176,6 +187,12 @@ func (r *Relay) bufferFromOffset(offset uint64) []byte {
 
 	start := int(offset - oldestOffset)
 	return snapshot[start:]
+}
+
+func (r *Relay) offsetWindow() (uint64, uint64) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.streamOffset - uint64(r.buffer.length), r.streamOffset
 }
 
 func (r *Relay) sendUpstream(data []byte) error {
@@ -214,6 +231,8 @@ func (r *Relay) broadcast(msg outbound) {
 func (r *Relay) addClient(c *client) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.nextClientID++
+	c.id = r.nextClientID
 	r.clients[c] = struct{}{}
 }
 
@@ -240,9 +259,16 @@ func (r *Relay) markUpstreamDown() {
 	}
 	r.mu.Unlock()
 
+	r.tracef("upstream down; closing_clients=%d", len(clients))
 	for _, c := range clients {
 		_ = c.conn.writeClose(1001, "upstream disconnected")
 		_ = c.conn.close()
+	}
+}
+
+func (r *Relay) tracef(format string, args ...any) {
+	if r.trace {
+		log.Printf("relay trace: "+format, args...)
 	}
 }
 

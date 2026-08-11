@@ -9,4 +9,5 @@ Targets:
 - `MooIOSRelaySelfTest`: executable smoke checks for relay/parser behavior
 - `MooIOSCoreFixtureRunner`: executable for shared classifier fixture parity checks
 
-This package currently provides reusable modules. A standalone iOS host app target is not yet in-repo.
+This package provides reusable modules. The minimal checked-in physical-device
+host app for Phase 9 acceptance lives at `../ios-host-app/Phase9Host.xcodeproj`.

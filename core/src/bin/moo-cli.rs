@@ -267,7 +267,7 @@ async fn run_single_connection(
         println!("trace: sent HELLO {}", state.session_id);
     }
 
-    if !config.no_resume && state.current_offset > 0 {
+    if !config.no_resume {
         write
             .send(Message::Text(
                 format!("RESUME {}\n", state.current_offset).into(),

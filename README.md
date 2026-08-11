@@ -48,6 +48,7 @@ Coding-agent constraints live in `AGENT.md`.
 - `macos-app/` SwiftUI desktop client
 - `ios-app/` iOS relay client module (`HELLO`, `SEND`, `PING`, `RESUME`)
   - includes iOS core classifier + minimal SwiftUI chat UI (occupants, messages, input)
+- `ios-host-app/` minimal iPhone sample host for repeatable Phase 9 runs
 - `scripts/` run/test/bootstrap scripts
 - `docker-compose.moo.yml` local LambdaMOO container stack
 
@@ -143,6 +144,7 @@ Example protocol lines:
 
 ```text
 HELLO test-session
+RESUME 0
 SEND connect wizard wizardtest
 SEND look
 PING
