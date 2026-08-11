@@ -31,10 +31,12 @@ Client -> Proxy
 
 Proxy -> Client
 - `WELCOME <session-id>`
+- `RESUMED <actual-offset>`
 - `DATA <raw-bytes>`
 - `PONG`
 
 Offsets are against raw upstream byte stream.
+`RESUMED <actual-offset>` is sent after each accepted `RESUME` and before any replayed `DATA`; clients must reset their next expected byte offset to `<actual-offset>` before parsing later `DATA`.
 
 ## Main components
 

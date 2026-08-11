@@ -85,6 +85,12 @@ final class RelayClient {
                 if line == "PONG" {
                     continue
                 }
+                if let offsetText = line.dropPrefix("RESUMED "), let offset = UInt64(offsetText) {
+                    receiveBuffer.removeAll()
+                    upstreamOffset = offset
+                    onSystem?(String(line))
+                    continue
+                }
                 if line.hasPrefix("WELCOME ") {
                     onSystem?(String(line))
                 }
@@ -114,5 +120,12 @@ final class RelayClient {
             upstreamOffset += UInt64(lineData.count + 1)
             classifier.classify(line: line, offset: offsetForLine)
         }
+    }
+}
+
+private extension Substring {
+    func dropPrefix(_ prefix: String) -> Substring? {
+        guard hasPrefix(prefix) else { return nil }
+        return dropFirst(prefix.count)
     }
 }
