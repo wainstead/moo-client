@@ -28,9 +28,10 @@ type Relay struct {
 }
 
 type client struct {
-	conn *wsConn
-	send chan outbound
-	id   uint64
+	conn          *wsConn
+	send          chan outbound
+	id            uint64
+	resumeHandled bool
 }
 
 type outbound struct {
@@ -160,6 +161,7 @@ func (r *Relay) handleLine(c *client, line string) error {
 		oldestOffset, streamOffset := r.offsetWindowLocked()
 		missing := r.bufferFromOffsetLocked(offset)
 		dropped := r.sendClientLocked(c, outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)})
+		c.resumeHandled = true
 		r.mu.Unlock()
 		r.tracef("ws client=%d RESUME requested_offset=%d oldest_offset=%d stream_offset=%d replay_bytes=%d", c.id, offset, oldestOffset, streamOffset, len(missing))
 		r.removeDroppedClient(dropped)
@@ -239,6 +241,9 @@ func (r *Relay) broadcast(msg outbound) {
 func (r *Relay) broadcastLocked(msg outbound) []*client {
 	var dropped []*client
 	for c := range r.clients {
+		if !c.resumeHandled {
+			continue
+		}
 		if drop := r.sendClientLocked(c, msg); drop != nil {
 			dropped = append(dropped, drop)
 		}

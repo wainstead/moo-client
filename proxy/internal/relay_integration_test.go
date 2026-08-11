@@ -67,6 +67,28 @@ func TestRelayDetachReattachKeepsSingleUpstreamAndNoReplayGap(t *testing.T) {
 	}
 }
 
+func TestRelayDoesNotDeliverLiveDataBeforeResume(t *testing.T) {
+	h := newRelayHarness(t, 128)
+	h.emit("before\n")
+	h.waitForOffset(7)
+
+	c := h.connectClient(t)
+	defer c.close()
+	c.expectWelcome(t)
+
+	h.emit("during\n")
+	h.waitForOffset(14)
+	if got := c.collectDataUntilIdle(t, 100*time.Millisecond); len(got) != 0 {
+		t.Fatalf("data before resume = %q, want none", string(got))
+	}
+
+	c.writeText(t, "HELLO phone\nRESUME 0\n")
+	got := c.collectDataUntilIdle(t, 100*time.Millisecond)
+	if string(got) != "before\nduring\n" {
+		t.Fatalf("data after resume = %q, want %q", string(got), "before\nduring\n")
+	}
+}
+
 func TestRelayResumeHandlesStaleAndFutureOffsets(t *testing.T) {
 	h := newRelayHarness(t, 8)
 	h.emit("abcdefghxyz")
