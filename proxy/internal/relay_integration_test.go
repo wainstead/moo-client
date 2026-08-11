@@ -98,18 +98,28 @@ func TestRelayResumeHandlesStaleAndFutureOffsets(t *testing.T) {
 	stale.expectWelcome(t)
 	stale.writeText(t, "HELLO stale\nRESUME 1\n")
 	staleReplay := stale.collectDataUntilIdle(t, 100*time.Millisecond)
-	stale.close()
 	if string(staleReplay) != "defghxyz" {
 		t.Fatalf("stale replay = %q, want %q", string(staleReplay), "defghxyz")
+	}
+	h.emit("stale-live\n")
+	staleLive := stale.collectDataUntilIdle(t, 100*time.Millisecond)
+	stale.close()
+	if string(staleLive) != "stale-live\n" {
+		t.Fatalf("stale live = %q, want %q", string(staleLive), "stale-live\n")
 	}
 
 	future := h.connectClient(t)
 	defer future.close()
 	future.expectWelcome(t)
-	future.writeText(t, "HELLO future\nRESUME 12\n")
+	future.writeText(t, "HELLO future\nRESUME 100\n")
 	futureReplay := future.collectDataUntilIdle(t, 100*time.Millisecond)
 	if len(futureReplay) != 0 {
 		t.Fatalf("future replay len = %d (%q), want 0", len(futureReplay), string(futureReplay))
+	}
+	h.emit("future-live\n")
+	futureLive := future.collectDataUntilIdle(t, 100*time.Millisecond)
+	if string(futureLive) != "future-live\n" {
+		t.Fatalf("future live = %q, want %q", string(futureLive), "future-live\n")
 	}
 }
 
