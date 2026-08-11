@@ -74,10 +74,11 @@ func (r *Relay) RunUpstreamPump() {
 			endOffset := r.streamOffset
 			r.buffer.Append(chunk)
 			oldestOffset := r.streamOffset - uint64(r.buffer.length)
+			dropped := r.broadcastLocked(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
 			r.mu.Unlock()
 
 			r.tracef("upstream read bytes=%d start_offset=%d end_offset=%d oldest_offset=%d", len(chunk), startOffset, endOffset, oldestOffset)
-			r.broadcast(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
+			r.removeDroppedClients(dropped)
 		}
 		if err != nil {
 			r.tracef("upstream read stopped: %v", err)
@@ -155,12 +156,13 @@ func (r *Relay) handleLine(c *client, line string) error {
 		if err != nil {
 			return errors.New("invalid resume offset")
 		}
-		oldestOffset, streamOffset := r.offsetWindow()
-		missing := r.bufferFromOffset(offset)
+		r.mu.Lock()
+		oldestOffset, streamOffset := r.offsetWindowLocked()
+		missing := r.bufferFromOffsetLocked(offset)
+		dropped := r.sendClientLocked(c, outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)})
+		r.mu.Unlock()
 		r.tracef("ws client=%d RESUME requested_offset=%d oldest_offset=%d stream_offset=%d replay_bytes=%d", c.id, offset, oldestOffset, streamOffset, len(missing))
-		if len(missing) > 0 {
-			c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)}
-		}
+		r.removeDroppedClient(dropped)
 		return nil
 	default:
 		return nil
@@ -173,6 +175,14 @@ func (r *Relay) bufferFromOffset(offset uint64) []byte {
 	streamOffset := r.streamOffset
 	r.mu.RUnlock()
 
+	return bufferFromSnapshot(offset, snapshot, streamOffset)
+}
+
+func (r *Relay) bufferFromOffsetLocked(offset uint64) []byte {
+	return bufferFromSnapshot(offset, r.buffer.Snapshot(), r.streamOffset)
+}
+
+func bufferFromSnapshot(offset uint64, snapshot []byte, streamOffset uint64) []byte {
 	if len(snapshot) == 0 {
 		return nil
 	}
@@ -192,6 +202,10 @@ func (r *Relay) bufferFromOffset(offset uint64) []byte {
 func (r *Relay) offsetWindow() (uint64, uint64) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+	return r.offsetWindowLocked()
+}
+
+func (r *Relay) offsetWindowLocked() (uint64, uint64) {
 	return r.streamOffset - uint64(r.buffer.length), r.streamOffset
 }
 
@@ -215,16 +229,45 @@ func (r *Relay) sendUpstream(data []byte) error {
 }
 
 func (r *Relay) broadcast(msg outbound) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	dropped := r.broadcastLocked(msg)
+	r.mu.Unlock()
 
+	r.removeDroppedClients(dropped)
+}
+
+func (r *Relay) broadcastLocked(msg outbound) []*client {
+	var dropped []*client
 	for c := range r.clients {
-		select {
-		case c.send <- msg:
-		default:
-			log.Printf("dropping websocket client: send buffer full")
-			go r.removeClient(c)
+		if drop := r.sendClientLocked(c, msg); drop != nil {
+			dropped = append(dropped, drop)
 		}
+	}
+	return dropped
+}
+
+func (r *Relay) sendClientLocked(c *client, msg outbound) *client {
+	if len(msg.data) == 0 {
+		return nil
+	}
+	select {
+	case c.send <- msg:
+		return nil
+	default:
+		log.Printf("dropping websocket client: send buffer full")
+		return c
+	}
+}
+
+func (r *Relay) removeDroppedClients(clients []*client) {
+	for _, c := range clients {
+		r.removeDroppedClient(c)
+	}
+}
+
+func (r *Relay) removeDroppedClient(c *client) {
+	if c != nil {
+		go r.removeClient(c)
 	}
 }
 
