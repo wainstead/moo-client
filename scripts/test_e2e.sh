@@ -127,6 +127,7 @@ exec 3>"$CLIENT_FIFO"
 expect_pattern "WELCOME " 15 || fail "did not receive WELCOME"
 
 send_line 'HELLO smoke-test'
+send_line 'RESUME 0'
 # Some DBs emit a login banner immediately, others do not.
 # We validate true end-to-end behavior via successful login/command flow below.
 expect_pattern "DATA " 5 || true

@@ -13,7 +13,7 @@ Architecture model: single upstream MOO connection, multiple concurrent WebSocke
 - Phase 4: Rust core event classifier (`Chat`, `Arrive`, `Leave`, `System`) (done)
 - Phase 5: minimal macOS app (done)
 - Phase 6: proxy LAN dev mode for phone-on-LAN testing (done)
-- Phase 7: iOS relay client (`HELLO`, `RESUME`, `SEND`, `PING`) (done)
+- Phase 7: iOS relay client (`HELLO`, `RESUME`, `RESUME_LIVE`, `SEND`, `PING`) (done)
 - Phase 8: minimal iOS chat UI layer (done)
 - CLI plan (A-D): interactive/debug CLI, persisted resume state, classifier parity fixtures, scripted scenarios (done)
 
@@ -46,8 +46,9 @@ Coding-agent constraints live in `AGENT.md`.
 - `proxy/` Go WebSocket<->TCP relay
 - `core/` Rust event classifier engine and CLI
 - `macos-app/` SwiftUI desktop client
-- `ios-app/` iOS relay client module (`HELLO`, `SEND`, `PING`, `RESUME`)
+- `ios-app/` iOS relay client module (`HELLO`, `RESUME`, `RESUME_LIVE`, `SEND`, `PING`)
   - includes iOS core classifier + minimal SwiftUI chat UI (occupants, messages, input)
+- `ios-host-app/` minimal iPhone sample host for repeatable Phase 9 runs
 - `scripts/` run/test/bootstrap scripts
 - `docker-compose.moo.yml` local LambdaMOO container stack
 
@@ -143,6 +144,7 @@ Example protocol lines:
 
 ```text
 HELLO test-session
+RESUME 0
 SEND connect wizard wizardtest
 SEND look
 PING

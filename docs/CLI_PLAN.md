@@ -30,7 +30,7 @@ Both should be tested. A CLI-driven workflow can validate both.
 Build a CLI tool that can:
 
 - Connect to proxy over WebSocket
-- Send protocol commands (`HELLO`, `RESUME`, `SEND`, `PING`)
+- Send protocol commands (`HELLO`, `RESUME`, `RESUME_LIVE`, `SEND`, `PING`)
 - Display raw stream and/or classified events
 - Track and persist session + offset state
 - Reconnect and verify replay behavior
@@ -66,7 +66,7 @@ Flags:
 - `--raw`
 - `--events`
 - `--json`
-- `--no-resume`
+- `--no-resume` (send `RESUME_LIVE`)
 - `--trace`
 
 Interactive input:

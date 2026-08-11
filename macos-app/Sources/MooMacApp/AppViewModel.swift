@@ -36,7 +36,7 @@ final class AppViewModel: ObservableObject {
 
         relay = client
         systems.append(SystemMessage(text: "connecting to \(wsURL.absoluteString)", offset: 0))
-        client.connect(resumeOffset: nil)
+        client.connect(resumeOffset: 0)
     }
 
     func disconnect() {

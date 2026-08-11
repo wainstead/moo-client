@@ -50,6 +50,18 @@ final class RelayStreamParserTests: XCTestCase {
         XCTAssertEqual(chunk.newestOffset, 102)
     }
 
+    func testResetOffsetBeforeReplay() {
+        let parser = RelayStreamParser(initialOffset: 100)
+        _ = parser.appendDataPayload(Data("partial".utf8))
+
+        parser.resetOffset(3)
+        let chunk = parser.appendDataPayload(Data("defghxyz\n".utf8))
+
+        XCTAssertEqual(chunk.lines[0].text, "defghxyz")
+        XCTAssertEqual(chunk.lines[0].offset, 12)
+        XCTAssertEqual(chunk.newestOffset, 12)
+    }
+
     func testEmptyPayloadNoChange() {
         let parser = RelayStreamParser(initialOffset: 5)
         let chunk = parser.appendDataPayload(Data())

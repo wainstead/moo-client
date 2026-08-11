@@ -19,7 +19,7 @@ This document covers:
 - automated checks for `proxy`, `core`, `ios-app`, and `macos-app`
 - local end-to-end testing against Dockerized LambdaMOO
 - manual click testing for macOS app
-- practical iPhone testing path for current Phase 8 state
+- primary in-repo iPhone sample path for Phase 9 acceptance
 
 ## Prerequisites
 
@@ -165,31 +165,70 @@ swift run MooMacApp
 - Verify occupant/system list updates
 - Disconnect and reconnect once
 
-## 5. Manual test: iPhone (current state)
+## 5. Manual test: iPhone sample app
 
-Phase 8 provides iOS core + UI modules, but not a standalone iOS host app target in this repo.
+Phase 9 uses the checked-in sample app at `ios-host-app/Phase9Host.xcodeproj`.
+It imports the local `ios-app` Swift package, presents `IOSChatView`, persists
+resume state with `UserDefaultsRelayStateStore`, and reconnects when the app
+returns to the active scene.
 
-To click test on iPhone now:
-1. Create a small iOS host app in Xcode.
-2. Add local package dependency: `<path-to-repo>/ios-app`.
-3. Use `IOSChatViewModel` + `IOSChatView` in host app.
-4. Connect to laptop LAN proxy URL: `ws://<laptop-lan-ip>:9000/ws`.
-5. Ensure laptop proxy is running in LAN mode:
+Fresh-checkout physical iPhone setup:
+
+1. Start local MOO and bootstrap it:
 
 ```bash
 cd moo-client
-PROXY_MODE=lan ./scripts/run_proxy.sh
+cp .env.moo.example .env.moo   # optional if already present
+./scripts/run_local_moo.sh reset
+./scripts/run_local_moo.sh up
+./scripts/run_local_moo.sh bootstrap
 ```
 
-6. On iPhone (same trusted LAN), verify connect/send/feed behavior.
+2. Find the laptop LAN IP used by the iPhone:
+
+```bash
+ipconfig getifaddr en0
+```
+
+If Wi-Fi is not `en0`, use the active trusted LAN interface instead.
+
+3. Edit `ios-host-app/Phase9Host/Phase9HostConfig.swift`:
+
+```swift
+static let defaultWebSocketURLString = "ws://<laptop-lan-ip>:9000/ws"
+```
+
+The checked-in default is `ws://127.0.0.1:9000/ws`; it is an obvious safe edit
+point, not a physical-device default.
+
+4. Start the proxy in trusted-LAN mode with trace logging:
+
+```bash
+cd moo-client
+MOO_PROXY_TRACE=1 PROXY_MODE=lan UPSTREAM_ADDR=127.0.0.1:7777 \
+  ./scripts/run_proxy.sh 2>&1 | tee /tmp/moo-phase9-proxy.log
+```
+
+5. Open `ios-host-app/Phase9Host.xcodeproj` in Xcode.
+6. Select the `Phase9Host` target, set a development team/signing identity if needed, and run it on a physical iPhone on the same trusted LAN.
+7. In the app, verify the top bar shows `ws://<laptop-lan-ip>:9000/ws`, the current offset, and connection state.
+8. Send `connect regular regulartest`, `look`, and one `say <run-id>-iphone-ready` command. Verify the feed, event log, and Xcode console show `HELLO`, `RESUME <offset>`, `WELCOME`, `DATA offset=...`, and monotonic offsets.
+
+Secondary external-host path:
+
+If the checked-in sample cannot be used, create a small Xcode iOS app outside
+the repo, add the local package dependency `<path-to-repo>/ios-app`, instantiate
+`IOSChatViewModel`, present `IOSChatView`, pass a
+`UserDefaultsRelayStateStore`, and reconnect on active scene. Keep the in-repo
+sample as the primary Phase 9 path whenever possible.
 
 ## 6. Resume behavior checks (manual)
 
-For reconnect validation:
-1. Connect and login.
-2. Close/suspend client.
-3. Produce room messages from another client.
-4. Reconnect and confirm missed lines are replayed.
+For quick reconnect validation:
+1. Connect and login from the iPhone sample.
+2. Close/suspend the app.
+3. Produce room messages from another direct MOO client.
+4. Reopen the app and confirm missed lines are replayed.
 
 Phase 9 acceptance run (iPhone invisible reconnect) pass criteria:
 - observer client does not see disconnect/reconnect text for the sleeping iPhone session
@@ -200,6 +239,82 @@ Failure criteria:
 - any reconnect artifact visible to observer
 - missing expected lines after resume
 - failed command flow after resume
+
+Repeatable Phase 9 evidence procedure:
+
+1. Create a run ID and artifact directory:
+
+```bash
+RUN_ID="phase9-$(date -u +%Y%m%dT%H%M%SZ)"
+ARTIFACT_DIR="/tmp/moo-$RUN_ID"
+mkdir -p "$ARTIFACT_DIR"
+git rev-parse HEAD | tee "$ARTIFACT_DIR/commit.txt"
+```
+
+2. Start a direct observer, not a second WebSocket client:
+
+```bash
+script -q "$ARTIFACT_DIR/observer.log" nc 127.0.0.1 7777
+```
+
+In the observer:
+
+```text
+connect wizard wizardtest
+look
+say <RUN_ID>-observer-ready
+```
+
+3. Start iPhone screen recording. In `Phase9Host`, send:
+
+```text
+connect regular regulartest
+look
+say <RUN_ID>-before-sleep
+```
+
+Record the visible offset before sleep.
+
+4. Lock or background the iPhone for at least 4 minutes. This intentionally
+exceeds the proxy WebSocket read deadline. During the sleep window, send from
+the direct observer:
+
+```text
+say <RUN_ID>-sleep-window-start
+say <RUN_ID>-sleep-001
+say <RUN_ID>-sleep-002
+say <RUN_ID>-sleep-003
+```
+
+5. Unlock/foreground the iPhone. Expected evidence:
+- the app reconnects without a manual proxy restart
+- app/Xcode logs show `RESUME <pre-sleep-offset>`
+- app feed shows all sleep-window markers in order
+- app offsets remain monotonic
+- proxy trace shows one upstream session and a replay window for the requested offset
+
+6. Send from the iPhone:
+
+```text
+say <RUN_ID>-after-resume
+look
+```
+
+Then send from the observer:
+
+```text
+say <RUN_ID>-sleep-window-end
+```
+
+7. Preserve:
+- `/tmp/moo-phase9-proxy.log`
+- `$ARTIFACT_DIR/observer.log`
+- iPhone screen recording
+- Xcode console or device log containing the Phase 9 event lines
+- run notes with device model, iOS version, macOS version, LAN IP, sleep duration, and pass/fail observations
+
+Do not mark physical Phase 9 acceptance passed unless this procedure was run
+on a physical iPhone.
 
 ## 7. Test data defaults
 

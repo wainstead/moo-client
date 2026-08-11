@@ -26,15 +26,19 @@ Priority order:
 Client -> Proxy
 - `HELLO <session-id>`
 - `RESUME <offset>`
+- `RESUME_LIVE`
 - `SEND <text>\n`
 - `PING`
 
 Proxy -> Client
 - `WELCOME <session-id>`
+- `RESUMED <actual-offset>`
 - `DATA <raw-bytes>`
 - `PONG`
 
 Offsets are against raw upstream byte stream.
+`RESUMED <actual-offset>` is sent after each accepted `RESUME` and before any replayed `DATA`; clients must reset their next expected byte offset to `<actual-offset>` before parsing later `DATA`.
+`RESUME_LIVE` requests no replay and establishes the live boundary at the current stream offset before later `DATA`.
 
 ## Main components
 
@@ -44,7 +48,7 @@ Offsets are against raw upstream byte stream.
 - Accepts WebSocket clients.
 - Broadcasts upstream bytes as `DATA`.
 - Maintains stream offset and 1 MB rolling buffer.
-- Supports `RESUME <offset>` replay from available window.
+- Supports explicit `RESUME <offset>` replay from available window.
 
 Key files:
 - `proxy/cmd/mooproxy/main.go`
@@ -80,8 +84,10 @@ Key files:
 - Handles proxy protocol commands:
   - `HELLO <session-id>`
   - `RESUME <offset>`
+  - `RESUME_LIVE`
   - `SEND <text>`
   - `PING`
+  - `RESUMED <actual-offset>`
 - Tracks session ID and last offset in a pluggable state store.
 - UI uses a core classification layer (`MooIOSCore`) so views do not parse raw relay text.
 

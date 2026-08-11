@@ -15,21 +15,21 @@ This plan focuses on closing risk gaps and making test results more deterministi
 
 ### 1. Proxy behavior integration tests (highest value)
 
-Status: planned
+Status: first slice complete
 
 Add focused integration tests around relay invariants in `proxy/internal`:
-- single upstream TCP session with multiple WebSocket clients
-- attach/detach behavior with no unintended upstream reconnect
+- single upstream TCP session with multiple WebSocket clients (covered for detach/reattach)
+- attach/detach behavior with no unintended upstream reconnect (covered for client detach/reattach)
 - resume edge cases:
-  - exact offset
-  - stale offset
-  - future offset
-  - buffer-wrap offset
+  - exact offset (covered)
+  - stale offset (covered)
+  - future offset (covered)
+  - buffer-wrap offset (covered by stale-window replay)
 - upstream disconnect behavior:
   - clients receive disconnect signal
   - `SEND` is rejected after upstream loss
   - proxy does not auto-reconnect
-- malformed protocol/control lines and frame boundary handling
+- malformed protocol/control lines and frame boundary handling (multiple control lines in one frame covered)
 
 Deliverables:
 - new Go test files in `proxy/internal`
@@ -37,12 +37,12 @@ Deliverables:
 
 ### 2. Deterministic fake-MOO harness
 
-Status: planned
+Status: first slice complete
 
 Create a lightweight scripted TCP test server used by proxy tests:
-- emits controlled upstream byte sequences
+- emits controlled upstream byte sequences (covered)
 - supports scripted disconnects and timing points
-- captures client `SEND` commands for assertions
+- captures client `SEND` commands for assertions (covered)
 
 Why:
 - removes LambdaMOO DB variability from protocol tests

@@ -259,19 +259,20 @@ async fn run_single_connection(
     let (mut write, mut read) = stream.split();
 
     write
-        .send(Message::Text(
-            format!("HELLO {}\n", state.session_id).into(),
-        ))
+        .send(Message::Text(format!("HELLO {}\n", state.session_id)))
         .await?;
     if config.trace {
         println!("trace: sent HELLO {}", state.session_id);
     }
 
-    if !config.no_resume && state.current_offset > 0 {
+    if config.no_resume {
+        write.send(Message::Text("RESUME_LIVE\n".into())).await?;
+        if config.trace {
+            println!("trace: sent RESUME_LIVE");
+        }
+    } else {
         write
-            .send(Message::Text(
-                format!("RESUME {}\n", state.current_offset).into(),
-            ))
+            .send(Message::Text(format!("RESUME {}\n", state.current_offset)))
             .await?;
         if config.trace {
             println!("trace: sent RESUME {}", state.current_offset);
@@ -290,7 +291,7 @@ async fn run_single_connection(
                                 if config.trace {
                                     println!("trace: sent SEND {}", text);
                                 }
-                                write.send(Message::Text(format!("SEND {text}\n").into())).await?;
+                                write.send(Message::Text(format!("SEND {text}\n"))).await?;
                             }
                             Command::Ping => {
                                 if config.trace {
@@ -353,7 +354,15 @@ async fn run_single_connection(
                             if config.raw {
                                 println!("raw-control: {line}");
                             }
-                            if line == "PONG" {
+                            if let Some(actual_offset) =
+                                apply_resumed_control(line, state, &mut receive_buffer)
+                            {
+                                save_state_if_enabled(config.state_file.as_deref(), state)?;
+                                if config.trace {
+                                    println!("trace: recv RESUMED {actual_offset}");
+                                }
+                                println!("resumed: {actual_offset}");
+                            } else if line == "PONG" {
                                 if config.trace {
                                     println!("trace: recv PONG");
                                 }
@@ -431,6 +440,17 @@ async fn run_single_connection(
             }
         }
     }
+}
+
+fn apply_resumed_control(
+    line: &str,
+    state: &mut SessionState,
+    receive_buffer: &mut Vec<u8>,
+) -> Option<u64> {
+    let actual_offset = line.strip_prefix("RESUMED ")?.parse::<u64>().ok()?;
+    receive_buffer.clear();
+    state.current_offset = actual_offset;
+    Some(actual_offset)
 }
 
 fn spawn_stdin_task(tx: mpsc::UnboundedSender<Outbound>) {
@@ -590,8 +610,8 @@ fn save_state_if_enabled(
 #[cfg(test)]
 mod tests {
     use super::{
-        load_scenario_lines, load_state_if_enabled, parse_command, save_state_if_enabled, Command,
-        SessionState,
+        apply_resumed_control, load_scenario_lines, load_state_if_enabled, parse_command,
+        save_state_if_enabled, Command, SessionState,
     };
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -626,6 +646,21 @@ mod tests {
             Command::Wait(250) => {}
             other => panic!("unexpected command: {other:?}"),
         }
+    }
+
+    #[test]
+    fn applies_resumed_control_to_offset_and_pending_bytes() {
+        let mut state = SessionState {
+            session_id: "test-session".to_string(),
+            current_offset: 999,
+        };
+        let mut receive_buffer = b"partial line".to_vec();
+
+        let got = apply_resumed_control("RESUMED 42", &mut state, &mut receive_buffer);
+
+        assert_eq!(got, Some(42));
+        assert_eq!(state.current_offset, 42);
+        assert!(receive_buffer.is_empty());
     }
 
     #[test]

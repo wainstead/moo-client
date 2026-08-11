@@ -16,6 +16,11 @@ final class RelayProtocolTests: XCTestCase {
         XCTAssertEqual(cmd.encodeLine(), "RESUME 4096\n")
     }
 
+    func testRelayCommandEncodeResumeLive() {
+        let cmd = RelayCommand.resumeLive
+        XCTAssertEqual(cmd.encodeLine(), "RESUME_LIVE\n")
+    }
+
     func testRelayCommandEncodeSend() {
         let cmd = RelayCommand.send(text: "look")
         XCTAssertEqual(cmd.encodeLine(), "SEND look\n")
@@ -39,6 +44,15 @@ final class RelayProtocolTests: XCTestCase {
         let got = RelayControl.parse(line: "PONG")
         if case .pong = got { } else {
             XCTFail("expected .pong, got \(got)")
+        }
+    }
+
+    func testRelayControlParseResumed() {
+        let got = RelayControl.parse(line: "RESUMED 42")
+        if case let .resumed(offset) = got {
+            XCTAssertEqual(offset, 42)
+        } else {
+            XCTFail("expected .resumed, got \(got)")
         }
     }
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,12 +23,16 @@ type Relay struct {
 	streamOffset uint64
 	buffer       *ringBuffer
 	writeMu      sync.Mutex
+	nextClientID uint64
+	trace        bool
 }
 
 type client struct {
-	conn       *wsConn
-	send       chan outbound
-	replaySent bool
+	conn          *wsConn
+	send          chan outbound
+	id            uint64
+	resumeHandled bool
+	nextOffset    uint64
 }
 
 type outbound struct {
@@ -36,6 +41,10 @@ type outbound struct {
 }
 
 func NewRelay(upstream net.Conn) (*Relay, error) {
+	return newRelayWithBufferCapacity(upstream, 1<<20)
+}
+
+func newRelayWithBufferCapacity(upstream net.Conn, bufferCapacity int) (*Relay, error) {
 	sid, err := newSessionID()
 	if err != nil {
 		return nil, err
@@ -45,7 +54,8 @@ func NewRelay(upstream net.Conn) (*Relay, error) {
 		sessionID: sid,
 		upstream:  upstream,
 		clients:   map[*client]struct{}{},
-		buffer:    newRingBuffer(1 << 20),
+		buffer:    newRingBuffer(bufferCapacity),
+		trace:     os.Getenv("MOO_PROXY_TRACE") == "1",
 	}, nil
 }
 
@@ -61,13 +71,19 @@ func (r *Relay) RunUpstreamPump() {
 			chunk := append([]byte(nil), buf[:n]...)
 
 			r.mu.Lock()
+			startOffset := r.streamOffset
 			r.streamOffset += uint64(len(chunk))
+			endOffset := r.streamOffset
 			r.buffer.Append(chunk)
+			oldestOffset := r.streamOffset - uint64(r.buffer.length)
+			dropped := r.broadcastLocked(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
 			r.mu.Unlock()
 
-			r.broadcast(outbound{opcode: opBinary, data: append([]byte("DATA "), chunk...)})
+			r.tracef("upstream read bytes=%d start_offset=%d end_offset=%d oldest_offset=%d", len(chunk), startOffset, endOffset, oldestOffset)
+			r.removeDroppedClients(dropped)
 		}
 		if err != nil {
+			r.tracef("upstream read stopped: %v", err)
 			r.markUpstreamDown()
 			return
 		}
@@ -81,7 +97,11 @@ func (r *Relay) HandleWS(conn *wsConn) {
 	}
 
 	r.addClient(c)
-	defer r.removeClient(c)
+	r.tracef("ws client=%d attach", c.id)
+	defer func() {
+		r.tracef("ws client=%d detach", c.id)
+		r.removeClient(c)
+	}()
 
 	go c.conn.writeLoop(c.send)
 	c.send <- outbound{opcode: opText, data: []byte("WELCOME " + r.sessionID)}
@@ -122,38 +142,51 @@ func (r *Relay) handleLine(c *client, line string) error {
 
 	switch {
 	case strings.HasPrefix(line, "HELLO "):
-		if !c.replaySent {
-			if recent := r.latestBuffer(); len(recent) > 0 {
-				c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), recent...)}
-			}
-			c.replaySent = true
+		r.tracef("ws client=%d HELLO", c.id)
+		return nil
+	case line == "RESUME_LIVE":
+		r.mu.Lock()
+		streamOffset := r.streamOffset
+		dropped := r.sendClientLocked(c, outbound{opcode: opText, data: []byte("RESUMED " + strconv.FormatUint(streamOffset, 10))})
+		if dropped == nil {
+			c.resumeHandled = true
+			c.nextOffset = streamOffset
 		}
+		r.mu.Unlock()
+		r.tracef("ws client=%d RESUME_LIVE actual_offset=%d", c.id, streamOffset)
+		r.removeDroppedClient(dropped)
 		return nil
 	case line == "PING":
+		r.tracef("ws client=%d PING", c.id)
 		c.send <- outbound{opcode: opText, data: []byte("PONG")}
 		return nil
 	case strings.HasPrefix(line, "SEND "):
-		return r.sendUpstream([]byte(strings.TrimPrefix(line, "SEND ") + "\n"))
+		payload := []byte(strings.TrimPrefix(line, "SEND ") + "\n")
+		r.tracef("ws client=%d SEND bytes=%d", c.id, len(payload))
+		return r.sendUpstream(payload)
 	case strings.HasPrefix(line, "RESUME "):
 		offsetStr := strings.TrimSpace(strings.TrimPrefix(line, "RESUME "))
 		offset, err := strconv.ParseUint(offsetStr, 10, 64)
 		if err != nil {
 			return errors.New("invalid resume offset")
 		}
-		if missing := r.bufferFromOffset(offset); len(missing) > 0 {
-			c.send <- outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)}
+		r.mu.Lock()
+		oldestOffset, streamOffset := r.offsetWindowLocked()
+		actualOffset := clampResumeOffset(offset, oldestOffset, streamOffset)
+		missing := r.bufferFromOffsetLocked(actualOffset)
+		dropped := r.sendClientLocked(c, outbound{opcode: opText, data: []byte("RESUMED " + strconv.FormatUint(actualOffset, 10))})
+		if dropped == nil {
+			dropped = r.sendClientLocked(c, outbound{opcode: opBinary, data: append([]byte("DATA "), missing...)})
+			c.resumeHandled = true
+			c.nextOffset = streamOffset
 		}
-		c.replaySent = true
+		r.mu.Unlock()
+		r.tracef("ws client=%d RESUME requested_offset=%d actual_offset=%d oldest_offset=%d stream_offset=%d replay_bytes=%d", c.id, offset, actualOffset, oldestOffset, streamOffset, len(missing))
+		r.removeDroppedClient(dropped)
 		return nil
 	default:
 		return nil
 	}
-}
-
-func (r *Relay) latestBuffer() []byte {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.buffer.Snapshot()
 }
 
 func (r *Relay) bufferFromOffset(offset uint64) []byte {
@@ -162,6 +195,14 @@ func (r *Relay) bufferFromOffset(offset uint64) []byte {
 	streamOffset := r.streamOffset
 	r.mu.RUnlock()
 
+	return bufferFromSnapshot(offset, snapshot, streamOffset)
+}
+
+func (r *Relay) bufferFromOffsetLocked(offset uint64) []byte {
+	return bufferFromSnapshot(offset, r.buffer.Snapshot(), r.streamOffset)
+}
+
+func bufferFromSnapshot(offset uint64, snapshot []byte, streamOffset uint64) []byte {
 	if len(snapshot) == 0 {
 		return nil
 	}
@@ -176,6 +217,26 @@ func (r *Relay) bufferFromOffset(offset uint64) []byte {
 
 	start := int(offset - oldestOffset)
 	return snapshot[start:]
+}
+
+func (r *Relay) offsetWindow() (uint64, uint64) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.offsetWindowLocked()
+}
+
+func (r *Relay) offsetWindowLocked() (uint64, uint64) {
+	return r.streamOffset - uint64(r.buffer.length), r.streamOffset
+}
+
+func clampResumeOffset(offset, oldestOffset, streamOffset uint64) uint64 {
+	if offset < oldestOffset {
+		return oldestOffset
+	}
+	if offset > streamOffset {
+		return streamOffset
+	}
+	return offset
 }
 
 func (r *Relay) sendUpstream(data []byte) error {
@@ -198,22 +259,80 @@ func (r *Relay) sendUpstream(data []byte) error {
 }
 
 func (r *Relay) broadcast(msg outbound) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	dropped := r.broadcastLocked(msg)
+	r.mu.Unlock()
+
+	r.removeDroppedClients(dropped)
+}
+
+func (r *Relay) broadcastLocked(msg outbound) []*client {
+	var dropped []*client
+	if !strings.HasPrefix(string(msg.data), "DATA ") {
+		for c := range r.clients {
+			if drop := r.sendClientLocked(c, msg); drop != nil {
+				dropped = append(dropped, drop)
+			}
+		}
+		return dropped
+	}
+
+	chunk := msg.data[len("DATA "):]
+	endOffset := r.streamOffset
+	startOffset := endOffset - uint64(len(chunk))
 
 	for c := range r.clients {
-		select {
-		case c.send <- msg:
-		default:
-			log.Printf("dropping websocket client: send buffer full")
-			go r.removeClient(c)
+		if !c.resumeHandled {
+			continue
 		}
+		if c.nextOffset >= endOffset {
+			continue
+		}
+
+		payload := chunk
+		if c.nextOffset > startOffset {
+			payload = chunk[int(c.nextOffset-startOffset):]
+		}
+
+		if drop := r.sendClientLocked(c, outbound{opcode: msg.opcode, data: append([]byte("DATA "), payload...)}); drop != nil {
+			dropped = append(dropped, drop)
+			continue
+		}
+		c.nextOffset = endOffset
+	}
+	return dropped
+}
+
+func (r *Relay) sendClientLocked(c *client, msg outbound) *client {
+	if len(msg.data) == 0 {
+		return nil
+	}
+	select {
+	case c.send <- msg:
+		return nil
+	default:
+		log.Printf("dropping websocket client: send buffer full")
+		return c
+	}
+}
+
+func (r *Relay) removeDroppedClients(clients []*client) {
+	for _, c := range clients {
+		r.removeDroppedClient(c)
+	}
+}
+
+func (r *Relay) removeDroppedClient(c *client) {
+	if c != nil {
+		go r.removeClient(c)
 	}
 }
 
 func (r *Relay) addClient(c *client) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.nextClientID++
+	c.id = r.nextClientID
 	r.clients[c] = struct{}{}
 }
 
@@ -240,9 +359,16 @@ func (r *Relay) markUpstreamDown() {
 	}
 	r.mu.Unlock()
 
+	r.tracef("upstream down; closing_clients=%d", len(clients))
 	for _, c := range clients {
 		_ = c.conn.writeClose(1001, "upstream disconnected")
 		_ = c.conn.close()
+	}
+}
+
+func (r *Relay) tracef(format string, args ...any) {
+	if r.trace {
+		log.Printf("relay trace: "+format, args...)
 	}
 }
 
