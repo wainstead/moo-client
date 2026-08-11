@@ -19,7 +19,7 @@ This document covers:
 - automated checks for `proxy`, `core`, `ios-app`, and `macos-app`
 - local end-to-end testing against Dockerized LambdaMOO
 - manual click testing for macOS app
-- practical iPhone testing path for current Phase 8 state
+- primary in-repo iPhone sample path for Phase 9 acceptance
 
 ## Prerequisites
 

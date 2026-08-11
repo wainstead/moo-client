@@ -84,8 +84,10 @@ Key files:
 - Handles proxy protocol commands:
   - `HELLO <session-id>`
   - `RESUME <offset>`
+  - `RESUME_LIVE`
   - `SEND <text>`
   - `PING`
+  - `RESUMED <actual-offset>`
 - Tracks session ID and last offset in a pluggable state store.
 - UI uses a core classification layer (`MooIOSCore`) so views do not parse raw relay text.
 

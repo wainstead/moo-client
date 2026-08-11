@@ -3,7 +3,7 @@
 Swift package for iOS-side client components.
 
 Targets:
-- `MooIOSRelay`: websocket/protocol client (`HELLO`, `RESUME`, `SEND`, `PING`)
+- `MooIOSRelay`: websocket/protocol client (`HELLO`, `RESUME`, `RESUME_LIVE`, `SEND`, `PING`)
 - `MooIOSCore`: structured event classification on iOS side
 - `MooIOSUI`: minimal SwiftUI view model + chat UI
 - `MooIOSRelaySelfTest`: executable smoke checks for relay/parser behavior

@@ -6,7 +6,7 @@ Key behavior:
 - single upstream TCP session to MOO
 - multiple WebSocket clients
 - rolling 1 MB buffer for replay
-- resume by byte offset (`RESUME <offset>`)
+- explicit resume by byte offset (`RESUME <offset>`) or live boundary (`RESUME_LIVE`)
 
 Main entrypoint:
 - `cmd/mooproxy`

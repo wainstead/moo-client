@@ -259,9 +259,7 @@ async fn run_single_connection(
     let (mut write, mut read) = stream.split();
 
     write
-        .send(Message::Text(
-            format!("HELLO {}\n", state.session_id).into(),
-        ))
+        .send(Message::Text(format!("HELLO {}\n", state.session_id)))
         .await?;
     if config.trace {
         println!("trace: sent HELLO {}", state.session_id);
@@ -274,9 +272,7 @@ async fn run_single_connection(
         }
     } else {
         write
-            .send(Message::Text(
-                format!("RESUME {}\n", state.current_offset).into(),
-            ))
+            .send(Message::Text(format!("RESUME {}\n", state.current_offset)))
             .await?;
         if config.trace {
             println!("trace: sent RESUME {}", state.current_offset);
@@ -295,7 +291,7 @@ async fn run_single_connection(
                                 if config.trace {
                                     println!("trace: sent SEND {}", text);
                                 }
-                                write.send(Message::Text(format!("SEND {text}\n").into())).await?;
+                                write.send(Message::Text(format!("SEND {text}\n"))).await?;
                             }
                             Command::Ping => {
                                 if config.trace {
